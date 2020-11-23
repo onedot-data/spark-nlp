@@ -3,6 +3,8 @@ package com.johnsnowlabs.ml.tensorflow
 import com.johnsnowlabs.ml.tensorflow.TensorResources.extractFloats
 import com.johnsnowlabs.nlp.annotators.ner.Verbose
 
+import scala.language.existentials
+
 class TensorflowSpell(
   val tensorflow: TensorflowWrapper,
   val verboseLevel: Verbose.Value
