@@ -187,7 +187,7 @@ scalacOptions ++= Seq(
   "-feature",                          // Emit warning and location for usages of features that should be imported explicitly.
   "-language:implicitConversions",     // Allow definition of implicit functions called views
   "-unchecked",                        // Enable additional warnings where generated code depends on assumptions.
-  "-Xcheckinit",                       // Wrap field accessors to throw an exception on uninitialized access.
+//  "-Xcheckinit",                       // Wrap field accessors to throw an exception on uninitialized access.
   "-Xlint:type-parameter-shadow",      // A local type parameter shadows a type already in scope.
   "-Ywarn-dead-code",                  // Warn when dead code is identified.
   "-Ywarn-unused:implicits",           // Warn if an implicit parameter is unused.
