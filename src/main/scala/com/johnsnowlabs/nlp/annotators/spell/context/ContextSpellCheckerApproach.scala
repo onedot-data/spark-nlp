@@ -2,8 +2,8 @@ package com.johnsnowlabs.nlp.annotators.spell.context
 
 import java.io.{BufferedWriter, File, FileWriter}
 
-import com.github.liblevenshtein.transducer.{Algorithm, Candidate}
 import com.github.liblevenshtein.transducer.factory.TransducerBuilder
+import com.github.liblevenshtein.transducer.{Algorithm, Candidate}
 import com.johnsnowlabs.nlp.annotators.common.{PrefixedToken, SuffixedToken}
 import com.johnsnowlabs.nlp.annotators.spell.context.parser._
 import com.johnsnowlabs.nlp.serialization.ArrayFeature
@@ -15,6 +15,7 @@ import org.apache.spark.sql.Dataset
 import org.slf4j.LoggerFactory
 import org.tensorflow.{Graph, Session}
 
+import scala.collection.JavaConverters.seqAsJavaListConverter
 import scala.collection.mutable
 import scala.io.Codec
 
@@ -307,9 +308,8 @@ class ContextSpellCheckerApproach(override val uid: String) extends
   *
   * */
   private def createTransducer(vocab:List[String]) = {
-    import scala.collection.JavaConversions._
     new TransducerBuilder().
-      dictionary(vocab.sorted, true).
+      dictionary(vocab.sorted.asJava, true).
       algorithm(Algorithm.STANDARD).
       defaultMaxDistance(getOrDefault(wordMaxDistance)).
       includeDistance(true).

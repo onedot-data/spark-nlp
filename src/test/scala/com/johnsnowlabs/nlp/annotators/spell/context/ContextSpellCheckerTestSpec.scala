@@ -17,6 +17,8 @@ import SparkAccessor.spark
 import org.apache.commons.io.FileUtils
 import spark.implicits._
 
+import scala.collection.JavaConverters.iterableAsScalaIterableConverter
+
 
 class ContextSpellCheckerTestSpec extends FlatSpec {
 
@@ -283,7 +285,6 @@ class ContextSpellCheckerTestSpec extends FlatSpec {
   "a model" should "serialize properly" ignore {
 
     import SparkAccessor.spark.implicits._
-    import scala.collection.JavaConversions._
 
     val ocrSpellModel = ContextSpellCheckerModel.read.load("./context_spell_med_en_2.0.0_2.4_1553552948340")
 
@@ -299,10 +300,12 @@ class ContextSpellCheckerTestSpec extends FlatSpec {
     val sortedTransducers = loadedModel.specialTransducers.getOrDefault.sortBy(_.label)
 
     assert(sortedTransducers(0).label == "_DATE_")
-    assert(sortedTransducers(0).generateTransducer.transduce("10710/2018", 1).map(_.term()).contains("10/10/2018"))
+    assert(sortedTransducers(0).generateTransducer.transduce("10710/2018", 1).asScala.map(_.term()).toSet
+      .contains("10/10/2018"))
 
     assert(sortedTransducers(1).label == "_NUM_")
-    assert(sortedTransducers(1).generateTransducer.transduce("50,C00", 1).map(_.term()).contains("50,000"))
+    assert(sortedTransducers(1).generateTransducer.transduce("50,C00", 1).asScala.map(_.term()).toSet
+      .contains("50,000"))
 
     val trellis = Array(Array.fill(6)(("the", 0.8, "the")),
       Array.fill(6)(("end", 1.2, "end")), Array.fill(6)((".", 1.2, ".")))
@@ -327,18 +330,16 @@ class ContextSpellCheckerTestSpec extends FlatSpec {
   }
 
   "number classes" should "recognize different number patterns" in {
-    import scala.collection.JavaConversions._
     val transducer = NumberToken.generateTransducer
 
-    assert(transducer.transduce("100.3").toList.exists(_.distance == 0))
+    assert(transducer.transduce("100.3").asScala.toList.exists(_.distance == 0))
     assert(NumberToken.separate("$40,000").equals(NumberToken.label))
   }
 
   "date classes" should "recognize different date and time formats" in {
-    import scala.collection.JavaConversions._
     val transducer = DateToken.generateTransducer
 
-    assert(transducer.transduce("10/25/1982").toList.exists(_.distance == 0))
+    assert(transducer.transduce("10/25/1982").asScala.toList.exists(_.distance == 0))
     assert(DateToken.separate("10/25/1982").equals(DateToken.label))
   }
 
