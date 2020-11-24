@@ -23,6 +23,10 @@ if (is_gpu.equals("true") && is_spark23.equals("true")){
 
 organization:= "com.johnsnowlabs.nlp"
 
+// Note: version is used to build pretrained download url.
+// since the format is incompatible, this does not matter much.
+// If we manage to support the old binary format, switching the version to a clean "2.2.2"
+// would build the correct url.
 version := "2.2.2-onedot"
 
 scalaVersion in ThisBuild := scalaVer
@@ -116,7 +120,11 @@ lazy val testDependencies = Seq(
 )
 
 lazy val utilDependencies = Seq(
+  "com.amazonaws" % "aws-java-sdk-s3" % "1.11.703",
+  "com.amazonaws" % "aws-java-sdk-kms" % "1.11.703",
+  "com.amazonaws" % "aws-java-sdk-core" % "1.11.703",
   "com.typesafe" % "config" % "1.3.0",
+  "org.apache.ivy" % "ivy" % "2.4.0",
   "org.rocksdb" % "rocksdbjni" % "6.5.3",
   "org.apache.hadoop" % "hadoop-aws" %  "3.2.0"
     exclude("com.fasterxml.jackson.core", "jackson-annotations")
