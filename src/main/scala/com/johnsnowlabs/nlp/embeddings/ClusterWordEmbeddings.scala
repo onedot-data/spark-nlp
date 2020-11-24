@@ -9,6 +9,8 @@ import org.apache.hadoop.fs.{FileSystem, Path}
 import org.apache.ivy.util.FileUtil
 import org.apache.spark.{SparkContext, SparkFiles}
 
+import scala.language.existentials
+
 /*
   1. Copy Embeddings to local tmp file
   2. Index Embeddings if need
