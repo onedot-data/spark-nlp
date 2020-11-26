@@ -27,7 +27,7 @@ organization:= "com.johnsnowlabs.nlp"
 // since the format is incompatible, this does not matter much.
 // If we manage to support the old binary format, switching the version to a clean "2.2.2"
 // would build the correct url.
-version := "2.2.2-onedot"
+version := "2.2.2-onedot1"
 
 scalaVersion in ThisBuild := scalaVer
 
@@ -119,26 +119,19 @@ lazy val testDependencies = Seq(
   "org.scalatest" %% "scalatest" % scalaTestVersion % "test"
 )
 
+val awsJavaSdkVersion = "1.11.828"
+val hadoopVersion = "2.10.0"
+
 lazy val utilDependencies = Seq(
-  "com.amazonaws" % "aws-java-sdk-s3" % "1.11.703",
-  "com.amazonaws" % "aws-java-sdk-kms" % "1.11.703",
-  "com.amazonaws" % "aws-java-sdk-core" % "1.11.703",
+  "com.amazonaws" % "aws-java-sdk-s3" % awsJavaSdkVersion % Provided,
+  "com.amazonaws" % "aws-java-sdk-kms" % awsJavaSdkVersion % Provided,
+  "com.amazonaws" % "aws-java-sdk-core" % awsJavaSdkVersion % Provided,
   "com.typesafe" % "config" % "1.3.0",
   "org.apache.ivy" % "ivy" % "2.4.0",
   "org.rocksdb" % "rocksdbjni" % "6.5.3",
-  "org.apache.hadoop" % "hadoop-aws" %  "3.2.0"
-    exclude("com.fasterxml.jackson.core", "jackson-annotations")
-    exclude("com.fasterxml.jackson.core", "jackson-databind")
-    exclude("com.fasterxml.jackson.core", "jackson-core")
-    exclude("commons-configuration","commons-configuration")
-    exclude("com.amazonaws","aws-java-sdk-bundle")
-    exclude("org.apache.hadoop" ,"hadoop-common"),
-  "com.amazonaws" % "aws-java-sdk-core" % "1.11.603"
-    exclude("com.fasterxml.jackson.core", "jackson-annotations")
-    exclude("com.fasterxml.jackson.core", "jackson-databind")
-    exclude("com.fasterxml.jackson.core", "jackson-core")
-    exclude("commons-configuration","commons-configuration"),
-  "com.amazonaws" % "aws-java-sdk-s3" % "1.11.603",
+  "org.apache.hadoop" % "hadoop-aws" %  hadoopVersion % Provided,
+  "com.amazonaws" % "aws-java-sdk-core" % awsJavaSdkVersion % Provided,
+  "com.amazonaws" % "aws-java-sdk-s3" % awsJavaSdkVersion % Provided,
   "com.github.universal-automata" % "liblevenshtein" % "3.0.0"
     exclude("com.google.guava", "guava")
     exclude("org.apache.commons", "commons-lang3"),
