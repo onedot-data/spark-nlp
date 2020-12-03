@@ -1,12 +1,12 @@
 package com.johnsnowlabs.util
 
-import scala.collection.JavaConversions.enumerationAsScalaIterator
-import scala.io.BufferedSource
-import scala.io.Codec
 import java.io.{File, FileInputStream, FileOutputStream, IOException}
 import java.util.zip.{ZipEntry, ZipFile, ZipOutputStream}
 
 import org.apache.commons.io.FileUtils
+
+import scala.collection.JavaConverters.enumerationAsScalaIteratorConverter
+import scala.io.{BufferedSource, Codec}
 
 /**
   * Copied from https://github.com/dhbikoff/Scala-Zip-Archive-Util
@@ -94,7 +94,7 @@ object ZipArchiveUtil {
     destDir.mkdirs()
 
     val zip = new ZipFile(file)
-    zip.entries foreach { entry =>
+    zip.entries.asScala foreach { entry =>
       val entryName = entry.getName
       val entryPath = {
         if (entryName.startsWith(basename))

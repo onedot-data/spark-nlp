@@ -346,7 +346,6 @@ class TransducerSeqFeature(model: HasFeatures, override val name: String)
   }
 
   override def deserializeObject(spark: SparkSession, path: String, field: String): Option[Seq[SpecialClassParser]] = {
-    import scala.collection.JavaConversions._
     val uri = new java.net.URI(path.replaceAllLiterally("\\", "/"))
     val fs: FileSystem = FileSystem.get(uri, spark.sparkContext.hadoopConfiguration)
     val dataPath = getFieldPath(path, field)

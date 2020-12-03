@@ -27,8 +27,6 @@ class TesseractAccess extends Tesseract {
     */
   @throws[TesseractException]
   def doOCRWithConfidence(bi: BufferedImage, rect: Rectangle, level:Int): (String, Double) = {
-    import scala.collection.JavaConversions._
-
     init()
     setTessVariables()
 

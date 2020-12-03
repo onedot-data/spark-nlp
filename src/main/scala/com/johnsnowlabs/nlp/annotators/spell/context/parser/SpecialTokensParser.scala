@@ -5,9 +5,7 @@ import com.github.liblevenshtein.transducer.{Algorithm, Candidate, ITransducer}
 import com.johnsnowlabs.nlp.annotators.spell.context.WeightedLevenshtein
 import com.navigamez.greex.GreexGenerator
 
-import scala.collection.JavaConversions._
-
-
+import scala.collection.JavaConverters.{iterableAsScalaIterableConverter, seqAsJavaListConverter}
 
 
 trait SpecialClassParser {
@@ -21,7 +19,7 @@ trait SpecialClassParser {
   def generateTransducer: ITransducer[Candidate]
 
   def replaceWithLabel(tmp: String): String = {
-    if(transducer.transduce(tmp, 0).toList.isEmpty)
+    if(transducer.transduce(tmp, 0).asScala.toList.isEmpty)
       tmp
     else
       label
@@ -38,15 +36,13 @@ trait RegexParser extends SpecialClassParser {
   val regex:String
 
   override def generateTransducer: ITransducer[Candidate] = {
-    import scala.collection.JavaConversions._
-
     // first step, enumerate the regular language
     val generator = new GreexGenerator(regex)
     val matches = generator.generateAll
 
     // second step, create the transducer
     new TransducerBuilder().
-      dictionary(matches.toList.sorted, true).
+      dictionary(matches.asScala.toList.sorted.asJava, true).
       algorithm(Algorithm.STANDARD).
       defaultMaxDistance(maxDist).
       includeDistance(true).
@@ -60,11 +56,9 @@ trait VocabParser extends SpecialClassParser {
   var vocab: Set[String]
 
   def generateTransducer: ITransducer[Candidate] = {
-    import scala.collection.JavaConversions._
-
     // second step, create the transducer
     new TransducerBuilder().
-      dictionary(vocab.toList.sorted, true).
+      dictionary(vocab.toList.sorted.asJava, true).
       algorithm(Algorithm.STANDARD).
       defaultMaxDistance(maxDist).
       includeDistance(true).
