@@ -13,6 +13,8 @@ import org.apache.spark.ml.util.Identifiable
 import org.apache.spark.sql.{Dataset, SparkSession}
 import org.slf4j.LoggerFactory
 
+import scala.collection.JavaConverters.iterableAsScalaIterableConverter
+
 
 class ContextSpellCheckerModel(override val uid: String) extends AnnotatorModel[ContextSpellCheckerModel]
   with ReadTensorflowModel
@@ -194,8 +196,7 @@ class ContextSpellCheckerModel(override val uid: String) extends AnnotatorModel[
   }
 
   def getClassCandidates(transducer: ITransducer[Candidate], token:String, label:String, maxDist:Int, limit:Int = 2) = {
-    import scala.collection.JavaConversions._
-    transducer.transduce(token, maxDist).map {cand =>
+    transducer.transduce(token, maxDist).asScala.map {cand =>
 
       // if weights are available, we use them
       val weight = weights.get.
@@ -207,15 +208,13 @@ class ContextSpellCheckerModel(override val uid: String) extends AnnotatorModel[
   }
 
   def getVocabCandidates(trans: ITransducer[Candidate], token: String, maxDist:Int) = {
-    import scala.collection.JavaConversions._
-
     if(token.head.isUpper && token.tail.forall(_.isLower)) {
-      trans.transduce(token.head.toLower + token.tail, maxDist).
-        toList.map(c => (c.term.head.toUpper +  c.term.tail, c.term, c.distance.toFloat))
+      trans.transduce(token.head.toLower + token.tail, maxDist).asScala.toList
+        .map(c => (c.term.head.toUpper +  c.term.tail, c.term, c.distance.toFloat))
     }
     else
-      trans.transduce(token, maxDist).
-        toList.map(c => (c.term, c.term, c.distance.toFloat))
+      trans.transduce(token, maxDist).asScala.toList
+        .map(c => (c.term, c.term, c.distance.toFloat))
   }
 
   override def beforeAnnotate(dataset: Dataset[_]): Dataset[_] = {

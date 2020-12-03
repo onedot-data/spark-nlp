@@ -409,8 +409,6 @@ class OcrHelper extends ImageProcessing with Serializable {
   // TODO: Sequence return type should be enough
   /* response here is (text, pagenum, noise_level) */
   private def tesseractMethod(renderedImages:Seq[RenderedImage]): Option[Seq[OcrRow]] = this.synchronized {
-    import scala.collection.JavaConversions._
-
     val imageRegions = renderedImages.map(render => {
       val image = PlanarImage.wrapRenderedImage(render)
 
