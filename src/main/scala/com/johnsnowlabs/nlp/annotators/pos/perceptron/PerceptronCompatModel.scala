@@ -5,6 +5,7 @@ import com.johnsnowlabs.nlp.serialization.StructFeature
 import com.johnsnowlabs.nlp.{Annotation, AnnotatorModel, ParamsAndFeaturesReadable}
 import com.johnsnowlabs.nlp.pretrained.ResourceDownloader
 import org.apache.spark.ml.util.Identifiable
+
 import scala.collection.JavaConverters._
 
 /**
@@ -12,15 +13,15 @@ import scala.collection.JavaConverters._
   * @param uid Internal constructor requirement for serialization of params
   * @@model: representation of a POS Tagger approach
   */
-class PerceptronModel(override val uid: String) extends AnnotatorModel[PerceptronModel] with PerceptronUtils {
+class PerceptronCompatModel(override val uid: String) extends AnnotatorModel[PerceptronCompatModel] with PerceptronUtils {
 
   import com.johnsnowlabs.nlp.AnnotatorType._
 
   /** Internal structure for target sentences holding their range information which is used for annotation */
   private case class SentenceToBeTagged(tokenizedSentence: TokenizedSentence, start: Int, end: Int)
 
-  val model: StructFeature[AveragedPerceptron] =
-    new StructFeature[AveragedPerceptron](this, "POS Model")
+  val model: StructFeature[AveragedPerceptronCompat] =
+    new StructFeature[AveragedPerceptronCompat](this, "POS Model")
 
   override val outputAnnotatorType: AnnotatorType = POS
 
@@ -57,9 +58,9 @@ class PerceptronModel(override val uid: String) extends AnnotatorModel[Perceptro
 
   def this() = this(Identifiable.randomUID("POS"))
 
-  def getModel: AveragedPerceptron = $$(model)
+  def getModel: AveragedPerceptronCompat = $$(model)
 
-  def setModel(targetModel: AveragedPerceptron): this.type = set(model, targetModel)
+  def setModel(targetModel: AveragedPerceptronCompat): this.type = set(model, targetModel)
 
   /** One to one annotation standing from the Tokens perspective, to give each word a corresponding Tag */
   override def annotate(annotations: Seq[Annotation]): Seq[Annotation] = {
@@ -69,10 +70,23 @@ class PerceptronModel(override val uid: String) extends AnnotatorModel[Perceptro
   }
 }
 
-trait PretrainedPerceptronModel {
-  def pretrained(name: String = "pos_anc", lang: String = "en", remoteLoc: String = ResourceDownloader.publicLoc): PerceptronModel = {
-    ResourceDownloader.downloadModel(PerceptronModel, name, Option(lang), remoteLoc)
+trait PretrainedPerceptronCompatModel {
+  def pretrained(name: String = "pos_anc_compat", lang: String = "en", remoteLoc: String = ResourceDownloader.publicLoc): PerceptronCompatModel = {
+    ResourceDownloader.downloadModel(PerceptronCompatModel, name, Option(lang), remoteLoc)
   }
 }
 
-object PerceptronModel extends ParamsAndFeaturesReadable[PerceptronModel] with PretrainedPerceptronModel
+object PerceptronCompatModel extends ParamsAndFeaturesReadable[PerceptronCompatModel] with PretrainedPerceptronCompatModel {
+  def fromPerceptronModel(original: PerceptronModel): PerceptronCompatModel = {
+    val model = original.getModel
+    val compat = new PerceptronCompatModel(original.uid)
+    compat.setModel(
+      AveragedPerceptronCompat(
+        model.tags,
+        model.taggedWordBook.asJava,
+        model.featuresWeight.asJava
+      )
+    )
+    compat
+  }
+}

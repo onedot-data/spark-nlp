@@ -1,5 +1,8 @@
 package com.johnsnowlabs.nlp.pretrained
 
+import com.johnsnowlabs.nlp.annotator.PerceptronModel
+import com.johnsnowlabs.nlp.annotators.pos.perceptron.PerceptronCompatModel
+
 import java.sql.Timestamp
 import com.johnsnowlabs.util.Version
 import org.scalatest.FlatSpec
@@ -41,4 +44,27 @@ class ResourceDownloaderSpec extends FlatSpec {
     assert(found.isDefined)
     assert(found.get == b.name_en_old)
   }
+
+  "ResourceDownloader" should "list all available public models" in {
+    for (lang <- Seq("en", "de", "fr", "it")) {
+      ResourceDownloader.showPublicModels(lang)
+    }
+  }
+
+  "ResourceDownloader" should "list all available public pipelines" in {
+    for (lang <- Seq("en", "de", "fr", "it")) {
+      ResourceDownloader.showPublicPipelines(lang)
+    }
+  }
+
+  "Compat" should "Save Compat versions of POS models" in {
+    val saveDir = System.getProperty("user.home") + "/compat"
+
+    for (lang <- Seq("en", "de", "fr", "it")) {
+      val original = PerceptronModel.pretrained(lang = lang)
+      val compat = PerceptronCompatModel.fromPerceptronModel(original)
+      compat.save(saveDir + "/pos_anc_compat_" + lang)
+    }
+  }
+
 }

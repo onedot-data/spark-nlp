@@ -104,7 +104,7 @@ class PerceptronApproach(override val uid: String) extends AnnotatorApproach[Per
       * Iterates for training
       */
     val trainedModel = (1 to $(nIterations)).foldLeft(initialModel) { (iteratedModel, iteration) => {
-      logger.debug(s"TRAINING: Iteration n: $iteration")
+      logger.info(s"TRAINING: Iteration n: $iteration")
       /**
         * In a shuffled sentences list, try to find tag of the word, hold the correct answer
         */
