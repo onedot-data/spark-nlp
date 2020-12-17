@@ -1,10 +1,11 @@
 package com.johnsnowlabs.nlp.annotators
 
-import com.johnsnowlabs.nlp.{Annotation, AnnotatorModel, ParamsAndFeaturesReadable}
 import com.johnsnowlabs.nlp.AnnotatorType.TOKEN
 import com.johnsnowlabs.nlp.serialization.MapFeature
+import com.johnsnowlabs.nlp.{Annotation, AnnotatorModel, ParamsAndFeaturesReadable}
 import org.apache.spark.ml.param.{BooleanParam, StringArrayParam}
 import org.apache.spark.ml.util.Identifiable
+import org.apache.spark.sql.types.StringType
 
 class NormalizerModel(override val uid: String) extends AnnotatorModel[NormalizerModel] {
 
@@ -17,7 +18,7 @@ class NormalizerModel(override val uid: String) extends AnnotatorModel[Normalize
 
   val lowercase = new BooleanParam(this, "lowercase", "whether to convert strings to lowercase")
 
-  protected val slangDict: MapFeature[String, String] = new MapFeature(this, "slangDict")
+  protected val slangDict: MapFeature[String, String] = new MapFeature[String, String](this, "slangDict", keyType = StringType, valueType = StringType)
 
   val slangMatchCase = new BooleanParam(this, "slangMatchCase", "whether or not to be case sensitive to match slangs. Defaults to false.")
 

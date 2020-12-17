@@ -5,6 +5,7 @@ import com.johnsnowlabs.nlp.pretrained.ResourceDownloader
 import com.johnsnowlabs.nlp.serialization.MapFeature
 import com.johnsnowlabs.nlp.{Annotation, AnnotatorModel, ParamsAndFeaturesReadable}
 import org.apache.spark.ml.util.Identifiable
+import org.apache.spark.sql.types.{LongType, StringType}
 import org.slf4j.LoggerFactory
 
 import scala.collection.immutable.HashSet
@@ -23,7 +24,7 @@ class NorvigSweetingModel(override val uid: String) extends AnnotatorModel[Norvi
   override val outputAnnotatorType: AnnotatorType = TOKEN
   override val inputAnnotatorTypes: Array[AnnotatorType] = Array(TOKEN)
 
-  protected val wordCount: MapFeature[String, Long] = new MapFeature(this, "wordCount")
+  protected val wordCount: MapFeature[String, Long] = new MapFeature(this, "wordCount", keyType = StringType, valueType = LongType)
 
   protected def getWordCount: Map[String, Long] = $$(wordCount)
 

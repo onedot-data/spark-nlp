@@ -1,10 +1,11 @@
 package com.johnsnowlabs.nlp.annotators
 
-import com.johnsnowlabs.nlp.{Annotation, AnnotatorModel, ParamsAndFeaturesReadable}
 import com.johnsnowlabs.nlp.AnnotatorType.TOKEN
-import com.johnsnowlabs.nlp.serialization.MapFeature
 import com.johnsnowlabs.nlp.pretrained.ResourceDownloader
+import com.johnsnowlabs.nlp.serialization.MapFeature
+import com.johnsnowlabs.nlp.{Annotation, AnnotatorModel, ParamsAndFeaturesReadable}
 import org.apache.spark.ml.util.Identifiable
+import org.apache.spark.sql.types.StringType
 
 class LemmatizerModel(override val uid: String) extends AnnotatorModel[LemmatizerModel] {
 
@@ -12,7 +13,7 @@ class LemmatizerModel(override val uid: String) extends AnnotatorModel[Lemmatize
 
   override val inputAnnotatorTypes: Array[AnnotatorType] = Array(TOKEN)
 
-  val lemmaDict: MapFeature[String, String] = new MapFeature(this, "lemmaDict")
+  val lemmaDict: MapFeature[String, String] = new MapFeature[String, String](this, "lemmaDict", keyType = StringType, valueType = StringType)
 
   def this() = this(Identifiable.randomUID("LEMMATIZER"))
 

@@ -5,6 +5,7 @@ import com.johnsnowlabs.nlp.annotators.param.{SerializedAnnotatorComponent, Writ
 case class AttrStat(frequency: Int, sum: Float)
 
 
+@SerialVersionUID(value = 4723053967981745686L)
 class DatasetMetadata
 (
   // labelId -> Label Name

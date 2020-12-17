@@ -13,7 +13,8 @@ import org.apache.commons.lang.SystemUtils
 import org.apache.spark.broadcast.Broadcast
 import org.apache.spark.ml.param.{BooleanParam, FloatParam, IntArrayParam, IntParam}
 import org.apache.spark.ml.util.Identifiable
-import org.apache.spark.sql.SparkSession
+import org.apache.spark.sql.types._
+import org.apache.spark.sql.{Row, SparkSession}
 
 
 class NerDLModel(override val uid: String)
@@ -28,7 +29,31 @@ class NerDLModel(override val uid: String)
 
   val minProba = new FloatParam(this, "minProbe", "Minimum probability. Used only if there is no CRF on top of LSTM layer.")
   val batchSize = new IntParam(this, "batchSize", "Size of every batch.")
-  val datasetParams = new StructFeature[DatasetEncoderParams](this, "datasetParams")
+  val datasetParams = new StructFeature[DatasetEncoderParams](this, "datasetParams",
+    schema = StructType(Seq(
+      StructField("tags", ArrayType(StringType)),
+      StructField("chars", StringType),
+      StructField("emptyVector", ArrayType(FloatType)),
+      StructField("embeddingsDim", IntegerType),
+      StructField("defaultTag", StringType)
+    )),
+    encode = struct =>
+      Row(
+        struct.tags,
+        struct.chars.mkString(""),
+        struct.emptyVector,
+        struct.embeddingsDim,
+        struct.defaultTag
+      ),
+    decode = row =>
+      DatasetEncoderParams(
+        tags = row.getAs[Seq[String]]("tags").toList,
+        chars = row.getAs[String]("chars").toList,
+        emptyVector = row.getAs[Seq[Float]]("emptyVector").toList,
+        embeddingsDim = row.getAs[Int]("embeddingsDim"),
+        defaultTag = row.getAs[String]("defaultTag")
+      )
+  )
   val configProtoBytes = new IntArrayParam(this, "configProtoBytes", "ConfigProto from tensorflow, serialized into byte array. Get with config_proto.SerializeToString()")
   val includeConfidence = new BooleanParam(this, "includeConfidence", "whether to include confidence scores in annotation metadata")
 

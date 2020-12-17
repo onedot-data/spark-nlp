@@ -1,7 +1,6 @@
 package com.johnsnowlabs.nlp.util.regex
 
 import com.johnsnowlabs.nlp.annotators.sbd.pragmatic.RuleSymbols
-import org.slf4j.LoggerFactory
 
 import scala.util.matching.Regex
 
@@ -26,8 +25,8 @@ class RuleFactory(matchStrategy: MatchStrategy.MatchStrategy,
     */
   protected case class RuleMatch(content: Regex.Match, identifier: String)
 
-  import TransformStrategy._
   import MatchStrategy._
+  import TransformStrategy._
 
   /** Helper functions to identify context in a word for debugging */
   private def logSubStartHelper(start: Int): Int = if (start > 10) start - 10 else  0
@@ -53,6 +52,10 @@ class RuleFactory(matchStrategy: MatchStrategy.MatchStrategy,
     rules = Seq.empty[RegexRule]
     this
   }
+
+  def getRules: Seq[RegexRule] = rules
+
+  def getSymbolRules: Seq[(String, RegexRule)] = symbolRules
 
   /** Shortcut functions, no need to execute them on runtime since a strategy won't change in lifetime of Factory */
   private val findMatchFunc = (text: String) => matchStrategy match {
@@ -122,6 +125,11 @@ class RuleFactory(matchStrategy: MatchStrategy.MatchStrategy,
   /** overrides rules with a new set of rules */
   def setRules(newRules: Seq[RegexRule]): this.type = {
     rules = newRules
+    this
+  }
+
+  def setSymbolRules(newRules: Seq[(String, RegexRule)]): this.type = {
+    symbolRules = newRules
     this
   }
 

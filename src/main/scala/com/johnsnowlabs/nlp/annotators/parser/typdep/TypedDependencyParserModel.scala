@@ -18,9 +18,21 @@ TypedDependencyParserModel(override val uid: String) extends AnnotatorModel[Type
   override val outputAnnotatorType: String = LABELED_DEPENDENCY
   override val inputAnnotatorTypes = Array(TOKEN, POS, DEPENDENCY)
 
-  val trainOptions: StructFeature[Options] = new StructFeature[Options](this, "trainOptions")
-  val trainParameters: StructFeature[Parameters] = new StructFeature[Parameters](this, "trainParameters")
-  val trainDependencyPipe: StructFeature[DependencyPipe] = new StructFeature[DependencyPipe](this, "trainDependencyPipe")
+  val trainOptions: StructFeature[Options] = new StructFeature[Options](this, "trainOptions",
+    schema = ???,
+    encode = ???,
+    decode = ???
+  )
+  val trainParameters: StructFeature[Parameters] = new StructFeature[Parameters](this, "trainParameters",
+    schema = ???,
+    encode = ???,
+    decode = ???
+  )
+  val trainDependencyPipe: StructFeature[DependencyPipe] = new StructFeature[DependencyPipe](this, "trainDependencyPipe",
+    schema = ???,
+    encode = ???,
+    decode = ???
+  )
   val conllFormat: Param[String] = new Param[String](this, "conllFormat", "CoNLL Format")
 
   def setOptions(targetOptions: Options): this.type = set(trainOptions, targetOptions)

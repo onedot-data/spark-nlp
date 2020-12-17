@@ -1,9 +1,9 @@
 package com.johnsnowlabs.ml.crf
 
-import VectorMath._
+import com.johnsnowlabs.ml.crf.VectorMath._
 import com.johnsnowlabs.nlp.annotators.param.{SerializedAnnotatorComponent, WritableAnnotatorComponent}
 
-
+@SerialVersionUID(value = -8708079826326132849L)
 class LinearChainCrfModel(val weights: Array[Float], val metadata: DatasetMetadata)
   extends WritableAnnotatorComponent {
 

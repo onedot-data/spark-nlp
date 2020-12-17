@@ -1,12 +1,12 @@
 package com.johnsnowlabs.nlp.annotators.parser.dep
 
-import com.johnsnowlabs.nlp.{Annotation, AnnotatorModel, ParamsAndFeaturesReadable}
 import com.johnsnowlabs.nlp.AnnotatorType._
-import com.johnsnowlabs.nlp.annotators.common.{DependencyParsed, DependencyParsedSentence, PosTagged}
 import com.johnsnowlabs.nlp.annotators.common.Annotated.PosTaggedSentence
+import com.johnsnowlabs.nlp.annotators.common.{DependencyParsed, DependencyParsedSentence, PosTagged}
 import com.johnsnowlabs.nlp.annotators.parser.dep.GreedyTransition._
 import com.johnsnowlabs.nlp.pretrained.ResourceDownloader
 import com.johnsnowlabs.nlp.serialization.StructFeature
+import com.johnsnowlabs.nlp.{Annotation, AnnotatorModel, ParamsAndFeaturesReadable}
 import org.apache.spark.ml.util.Identifiable
 
 class DependencyParserModel(override val uid: String) extends AnnotatorModel[DependencyParserModel] {
@@ -16,7 +16,11 @@ class DependencyParserModel(override val uid: String) extends AnnotatorModel[Dep
 
   override val inputAnnotatorTypes: Array[String] =  Array[String](DOCUMENT, POS, TOKEN)
 
-  val perceptron: StructFeature[DependencyMaker] = new StructFeature[DependencyMaker](this, "perceptron")
+  val perceptron: StructFeature[DependencyMaker] = new StructFeature[DependencyMaker](this, "perceptron",
+    schema = ???,
+    encode = ???,
+    decode = ???
+  )
 
   def setPerceptron(value: DependencyMaker): this.type = set(perceptron, value)
 
