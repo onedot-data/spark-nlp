@@ -76,7 +76,7 @@ case class OcrRow(
 
 class OcrHelper extends ImageProcessing with Serializable {
 
-  private def logger = LoggerFactory.getLogger("OcrHelper")
+  private def logger = LoggerFactory.getLogger(classOf[OcrHelper])
   private val imageFormats = Seq(".png", ".jpg")
 
   @transient

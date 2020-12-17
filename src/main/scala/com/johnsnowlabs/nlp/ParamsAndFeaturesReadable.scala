@@ -8,7 +8,7 @@ import scala.collection.mutable.ArrayBuffer
 
 class FeaturesReader[T <: HasFeatures](baseReader: MLReader[T], onRead: (T, String, SparkSession) => Unit, readMode: Option[String] = None) extends MLReader[T] {
 
-  private val logger = LoggerFactory.getLogger("FeaturesReader")
+  private val logger = LoggerFactory.getLogger(getClass)
 
   override def load(path: String): T = {
     logger.debug(s"load($path) [${baseReader.getClass.getCanonicalName}]")

@@ -14,7 +14,7 @@ import org.slf4j.LoggerFactory
 
 class LoggingData(sourceType: String, sourceName: String, experimentName: String) {
 
-  private val logger = LoggerFactory.getLogger("LoggingData")
+  private val logger = LoggerFactory.getLogger(classOf[LoggingData])
 
   private val mlFlowClient = getMLFlowClient
   private val runInfo = getRunInfo(experimentName)

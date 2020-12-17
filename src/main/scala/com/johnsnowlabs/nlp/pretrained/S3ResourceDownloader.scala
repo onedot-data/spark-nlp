@@ -5,7 +5,6 @@ import java.nio.file.Files
 import java.sql.Timestamp
 import java.util.Calendar
 import java.util.zip.ZipInputStream
-
 import com.amazonaws.auth.AWSCredentials
 import com.amazonaws.regions.RegionUtils
 import com.amazonaws.services.s3.AmazonS3Client
@@ -13,8 +12,10 @@ import com.amazonaws.services.s3.model.GetObjectRequest
 import com.amazonaws.{AmazonServiceException, ClientConfiguration}
 import com.johnsnowlabs.util.{ConfigHelper, FileHelper}
 import org.apache.hadoop.fs.Path
+import org.slf4j.LoggerFactory
 
 import scala.collection.mutable
+import scala.collection.JavaConverters._
 
 
 class S3ResourceDownloader(bucket: => String,
@@ -24,6 +25,8 @@ class S3ResourceDownloader(bucket: => String,
                            region: String = "us-east-1"
                           )
   extends ResourceDownloader with AutoCloseable {
+
+  private val logger = LoggerFactory.getLogger(classOf[S3ResourceDownloader])
 
   // repository Folder -> repository Metadata
   val repoFolder2Metadata = mutable.Map[String, RepositoryMetadata]()
@@ -49,6 +52,10 @@ class S3ResourceDownloader(bucket: => String,
     }
 
     s3Client.setRegion(regionObj)
+    logger.info(s"S3 Client initialized")
+    logger.info(s" - ${regionObj.getName}")
+    logger.info(s" - ${regionObj.getDomain}")
+    logger.info(s" - ${regionObj.getAvailableEndpoints.asScala.mkString(", ")}")
     s3Client
   }
 
@@ -107,6 +114,7 @@ class S3ResourceDownloader(bucket: => String,
 
             // 2. Download content to tmp file
             val req = new GetObjectRequest(bucket, s3FilePath)
+            logger.info(s"Downloading $bucket / $s3FilePath to ${tmpFile.toString}")
             client.getObject(req, tmpFile)
             // 3. validate checksum
             if (!resource.checksum.equals(""))
@@ -114,8 +122,6 @@ class S3ResourceDownloader(bucket: => String,
 
             // 4. Move tmp file to destination
             fs.moveFromLocalFile(new Path(tmpFile.toString), dstFile)
-
-
           }
 
           // 5. Unzip if needs

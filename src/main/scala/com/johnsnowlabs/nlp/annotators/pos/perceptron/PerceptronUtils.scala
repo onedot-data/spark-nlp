@@ -8,7 +8,7 @@ trait PerceptronUtils  {
   private[perceptron] val START = Array("-START-", "-START2-")
   private[perceptron] val END = Array("-END-", "-END2-")
 
-  private[perceptron] val logger: Logger = LoggerFactory.getLogger("PerceptronTraining")
+  private[perceptron] val logger: Logger = LoggerFactory.getLogger(getClass)
 
   /**
     * Specific normalization rules for this POS Tagger to avoid unnecessary tagging

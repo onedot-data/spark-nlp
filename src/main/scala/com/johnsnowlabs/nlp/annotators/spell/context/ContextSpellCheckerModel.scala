@@ -24,7 +24,7 @@ class ContextSpellCheckerModel(override val uid: String) extends AnnotatorModel[
   with ParamsAndFeaturesWritable
   with HasTransducerFeatures {
 
-  private val logger = LoggerFactory.getLogger("ContextSpellCheckerModel")
+  private val logger = LoggerFactory.getLogger(classOf[ContextSpellCheckerModel])
 
   override val tfFile: String = "bigone"
 

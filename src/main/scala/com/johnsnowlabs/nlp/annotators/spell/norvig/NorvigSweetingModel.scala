@@ -19,12 +19,12 @@ class NorvigSweetingModel(override val uid: String) extends AnnotatorModel[Norvi
     */
 
   def this() = this(Identifiable.randomUID("SPELL"))
-  private val logger = LoggerFactory.getLogger("NorvigApproach")
+  private val logger = LoggerFactory.getLogger(classOf[NorvigSweetingModel])
 
   override val outputAnnotatorType: AnnotatorType = TOKEN
   override val inputAnnotatorTypes: Array[AnnotatorType] = Array(TOKEN)
 
-  protected val wordCount: MapFeature[String, Long] = new MapFeature(this, "wordCount", keyType = StringType, valueType = LongType)
+  protected val wordCount: MapFeature[String, Long] = new MapFeature[String, Long](this, "wordCount", keyType = StringType, valueType = LongType)
 
   protected def getWordCount: Map[String, Long] = $$(wordCount)
 

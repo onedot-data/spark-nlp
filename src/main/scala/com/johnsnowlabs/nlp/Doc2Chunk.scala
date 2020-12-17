@@ -19,7 +19,7 @@ class Doc2Chunk(override val uid: String) extends RawAnnotator[Doc2Chunk]{
 
   override val inputAnnotatorTypes: Array[String] = Array(DOCUMENT)
 
-  private val logger = LoggerFactory.getLogger("ChunkAssembler")
+  private val logger = LoggerFactory.getLogger(classOf[Doc2Chunk])
 
   val chunkCol = new Param[String](this, "chunkCol", "column that contains string. Must be part of DOCUMENT")
   val startCol = new Param[String](this, "startCol", "column that has a reference of where chunk begins")

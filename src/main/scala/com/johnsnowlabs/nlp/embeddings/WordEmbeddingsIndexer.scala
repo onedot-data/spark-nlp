@@ -84,7 +84,7 @@ private[embeddings] object TextIndexer {
 
 private[embeddings] object BinaryIndexer {
 
-  private val logger = LoggerFactory.getLogger("WordEmbeddings")
+  private val logger = LoggerFactory.getLogger(classOf[WordEmbeddings])
 
   def index(source: DataInputStream, dbFile: String): Unit = {
     val indexer = RocksDbIndexer(dbFile, Some(1000))

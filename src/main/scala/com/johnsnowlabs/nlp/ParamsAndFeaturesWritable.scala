@@ -8,7 +8,7 @@ import org.slf4j.LoggerFactory
 class FeaturesWriter[T](annotatorWithFeatures: HasFeatures, baseWriter: MLWriter, onWritten: (String, SparkSession) => Unit, writeMode: Option[String] = None)
   extends MLWriter with HasFeatures {
 
-  private val logger = LoggerFactory.getLogger("FeaturesWriter")
+  private val logger = LoggerFactory.getLogger(getClass)
 
   override protected def saveImpl(path: String): Unit = {
     logger.debug(s"saveImpl($path) [${baseWriter.getClass.getCanonicalName}]")

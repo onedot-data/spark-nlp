@@ -25,7 +25,7 @@ class TensorflowWrapper(
   }
 
   @transient private var msession: Session = _
-  @transient private val logger = LoggerFactory.getLogger("TensorflowWrapper")
+  @transient private val logger = LoggerFactory.getLogger(classOf[TensorflowWrapper])
 
   def getSession(configProtoBytes: Option[Array[Byte]] = None): Session = {
 
@@ -151,7 +151,7 @@ class TensorflowWrapper(
 }
 
 object TensorflowWrapper {
-  private[TensorflowWrapper] val logger: Logger = LoggerFactory.getLogger("TensorflowWrapper")
+  private[TensorflowWrapper] val logger: Logger = LoggerFactory.getLogger(classOf[TensorflowWrapper])
 
   def readGraph(graphFile: String): Graph = {
     val graphBytesDef = FileUtils.readFileToByteArray(new File(graphFile))

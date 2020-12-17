@@ -104,8 +104,8 @@ class ResourceDownloaderSpec extends FlatSpec with BeforeAndAfterEach {
   "WordEmbeddingsModel" should "Download & Save Standard" in {
     WordEmbeddingsModel
       .pretrained(name = "glove_100d", lang = "en")
-      .write.overwrite()
-      .save(s"$standardDir/glove_100d_en")
+//      .write.overwrite()
+//      .save(s"$standardDir/glove_100d_en")
   }
 
   "WordEmbeddingsModel" should "Load Standard & Save Compat" in {
@@ -124,8 +124,8 @@ class ResourceDownloaderSpec extends FlatSpec with BeforeAndAfterEach {
   "NerCrfModel" should "Download & Save Standard" in {
     NerCrfModel
       .pretrained(name = "ner_crf", lang = "en")
-      .write.overwrite()
-      .save(s"$standardDir/ner_crf_en")
+//      .write.overwrite()
+//      .save(s"$standardDir/ner_crf_en")
   }
 
   "NerCrfModel" should "Load Standard & Save Compat" in {

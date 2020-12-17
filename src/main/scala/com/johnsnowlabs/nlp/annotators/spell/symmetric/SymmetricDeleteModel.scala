@@ -52,7 +52,7 @@ class SymmetricDeleteModel(override val uid: String) extends AnnotatorModel[Symm
   def setDictionary(value: Map[String, Long]): this.type = set(dictionary, value)
   def setDerivedWords(value: Map[String, (List[String], Long)]): this.type = set(derivedWords, value)
 
-  private val logger = LoggerFactory.getLogger("SymmetricDeleteApproach")
+  private val logger = LoggerFactory.getLogger(classOf[SymmetricDeleteModel])
 
   private lazy val allWords: HashSet[String] = {
     HashSet($$(derivedWords).keys.toSeq.map(_.toLowerCase): _*)

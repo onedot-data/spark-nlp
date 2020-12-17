@@ -2,7 +2,6 @@ package com.johnsnowlabs.nlp.pretrained
 
 import java.io.{FileWriter, InputStream}
 import java.sql.Timestamp
-
 import com.johnsnowlabs.nlp.pretrained.ResourceType.ResourceType
 import com.johnsnowlabs.util.Version
 import org.json4s.NoTypeHints
@@ -10,6 +9,7 @@ import org.json4s.ext.EnumNameSerializer
 import org.json4s.jackson.JsonMethods.parse
 import org.json4s.jackson.Serialization
 import org.json4s.jackson.Serialization.write
+import org.slf4j.LoggerFactory
 
 import scala.io.Source
 
@@ -51,6 +51,8 @@ case class ResourceMetadata
 
 
 object ResourceMetadata {
+  private val logger = LoggerFactory.getLogger(getClass)
+
   implicit val formats = Serialization.formats(NoTypeHints) + new EnumNameSerializer(ResourceType)
 
   def toJson(meta: ResourceMetadata): String  = {
@@ -74,6 +76,10 @@ object ResourceMetadata {
       )
       .sortBy(item => item.time.getTime)
       .lastOption
+      .map { metadata =>
+        logger.info(metadata.toString)
+        metadata
+      }
   }
 
   def readResources(file: String): List[ResourceMetadata] = {
