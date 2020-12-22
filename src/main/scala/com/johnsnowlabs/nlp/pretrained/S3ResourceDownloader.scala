@@ -52,10 +52,6 @@ class S3ResourceDownloader(bucket: => String,
     }
 
     s3Client.setRegion(regionObj)
-    logger.info(s"S3 Client initialized")
-    logger.info(s" - ${regionObj.getName}")
-    logger.info(s" - ${regionObj.getDomain}")
-    logger.info(s" - ${regionObj.getAvailableEndpoints.asScala.mkString(", ")}")
     s3Client
   }
 
@@ -114,7 +110,7 @@ class S3ResourceDownloader(bucket: => String,
 
             // 2. Download content to tmp file
             val req = new GetObjectRequest(bucket, s3FilePath)
-            logger.info(s"Downloading: `aws s3 cp s3://$bucket/$s3FilePath ${tmpFile.toString}`")
+            logger.debug(s"Downloading: `aws s3 cp s3://$bucket/$s3FilePath ${tmpFile.toString}`")
             client.getObject(req, tmpFile)
             // 3. validate checksum
             if (!resource.checksum.equals(""))

@@ -86,7 +86,7 @@ object ResourceDownloader {
 
           val key = ResourceHelper.spark.sparkContext.hadoopConfiguration.get("fs.s3a.access.key")
           val secret = ResourceHelper.spark.sparkContext.hadoopConfiguration.get("fs.s3a.secret.key")
-          logger.info(s"Loaded AWS credentials: ACCESS_KEY := $key")
+          logger.trace(s"Loaded AWS credentials: ACCESS_KEY := $key")
 
           Some(new BasicAWSCredentials(key, secret))
         } else {
@@ -329,7 +329,7 @@ object ResourceDownloader {
     }
 
     require(path.isDefined, s"Was not found appropriate resource to download for request: $request with downloader: $defaultDownloader")
-    logger.info(s"Download done! Loading the resource ${s3Path}")
+    logger.info(s"Download done! Loading the resource '${request.name}${request.language.map("_" + _).getOrElse("")}'")
     path.get
   }
 
@@ -387,10 +387,8 @@ object ResourceDownloader {
       size = defaultDownloader.getDownloadSize(ResourceRequest(name, language, folder))
     }
     size match {
-      case Some(downloadBytes) => return FileHelper.getHumanReadableFileSize(downloadBytes)
-      case None => return "-1"
-
-
+      case Some(downloadBytes) => FileHelper.getHumanReadableFileSize(downloadBytes)
+      case None => "-1"
     }
   }
 }
