@@ -114,7 +114,7 @@ class S3ResourceDownloader(bucket: => String,
 
             // 2. Download content to tmp file
             val req = new GetObjectRequest(bucket, s3FilePath)
-            logger.info(s"Downloading $bucket / $s3FilePath to ${tmpFile.toString}")
+            logger.info(s"Downloading: `aws s3 cp s3://$bucket/$s3FilePath ${tmpFile.toString}`")
             client.getObject(req, tmpFile)
             // 3. validate checksum
             if (!resource.checksum.equals(""))

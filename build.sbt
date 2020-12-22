@@ -44,7 +44,7 @@ organization:= "com.johnsnowlabs.nlp"
 // since the format is incompatible, this does not matter much.
 // If we manage to support the old binary format, switching the version to a clean "2.2.2"
 // would build the correct url.
-version := "2.2.2-spark3-onedot2"
+version := "2.2.2.2-onedot"
 
 scalaVersion in ThisBuild := scalaVer
 

@@ -20,6 +20,8 @@ class PipelineModelCompat private[ml](uid: String, stages: java.util.List[Transf
   def this(uid: String, stages: Seq[Transformer]) = this(uid, stages.asJava)
 
   override def write: MLWriter = new PipelineModelCompatWriter(this)
+
+  def compatWrite: MLWriter = write
 }
 
 object PipelineModelCompat extends MLReadable[PipelineModelCompat] {
@@ -29,7 +31,6 @@ object PipelineModelCompat extends MLReadable[PipelineModelCompat] {
 
   def toPipelineModel(pipelineCompatModel: PipelineModelCompat): PipelineModel =
     new PipelineModel(pipelineCompatModel.uid, pipelineCompatModel.stages)
-
 
   def compatRead: MLReader[PipelineModelCompat] = new PipelineModelCompatReader
   def read: MLReader[PipelineModelCompat] = compatRead
