@@ -46,11 +46,15 @@ trait ParamsAndFeaturesReadable[T <: HasFeatures] extends DefaultParamsReadable[
     readers.append(reader)
   }
 
-  def compatRead: MLReader[T] = new FeaturesReader(
-    super.read,
-    (instance: T, path: String, spark: SparkSession) => onRead(instance, path, spark),
-    readMode = Some("compat")
-  )
+  object compat extends DefaultParamsReadable[T] {
+    override def read: MLReader[T] = new FeaturesReader(
+      super.read,
+      (instance: T, path: String, spark: SparkSession) => onRead(instance, path, spark),
+      readMode = Some("compat")
+    )
+  }
+
+  def compatRead: MLReader[T] = compat.read
 
   override def read: MLReader[T] = new FeaturesReader(
     super.read,

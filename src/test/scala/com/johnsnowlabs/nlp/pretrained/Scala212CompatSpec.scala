@@ -128,11 +128,7 @@ object Scala212CompatSpec {
         downloadPipeline(_, _, publicLoc),
         PipelineModel.read,
         _.write,
-        new MLReader[PipelineModel] {
-          def load(path: String): PipelineModel = {
-            PipelineModelCompat.toPipelineModel(PipelineModelCompat.load(path))
-          }
-        },
+        (path: String) => PipelineModelCompat.toPipelineModel(PipelineModelCompat.load(path)),
         PipelineModelCompat.fromPipelineModel(_).compatWrite,
         Map("en" -> "explain_document_ml")
       )

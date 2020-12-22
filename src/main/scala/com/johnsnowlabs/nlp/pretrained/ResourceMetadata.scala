@@ -77,7 +77,7 @@ object ResourceMetadata {
       .sortBy(item => item.time.getTime)
       .lastOption
       .map { metadata =>
-        logger.info(metadata.toString)
+        logger.trace(metadata.toString)
         metadata
       }
   }
