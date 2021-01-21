@@ -99,7 +99,7 @@ object Scala212CompatSpec {
                                  standardWriter: A => MLWriter,
                                  compatReader: MLReader[A],
                                  compatWriter: A => MLWriter,
-                                 models: Map[String, String])
+                                 models: Seq[(String, String)])
 
   object exports {
     val perceptronModel: ExportDefinition[PerceptronModel] = {
@@ -110,7 +110,7 @@ object Scala212CompatSpec {
         _.write,
         PerceptronModel.compatRead,
         _.compatWrite,
-        Map(
+        Seq(
           "en" -> "pos_anc",
           "de" -> "pos_ud_hdt",
           "fr" -> "pos_ud_gsd",
@@ -126,7 +126,7 @@ object Scala212CompatSpec {
         _.write,
         WordEmbeddingsModel.compatRead,
         _.compatWrite,
-        Map("en" -> "glove_100d")
+        Seq("en" -> "glove_100d")
       )
     }
     val nerCrfModel: ExportDefinition[NerCrfModel] = {
@@ -137,7 +137,7 @@ object Scala212CompatSpec {
         _.write,
         NerCrfModel.compatRead,
         _.compatWrite,
-        Map("en" -> "ner_crf")
+        Seq("en" -> "ner_crf")
       )
     }
     val pretrainedPipeline: ExportDefinition[PipelineModel] = {
@@ -148,7 +148,7 @@ object Scala212CompatSpec {
         _.write,
         (path: String) => PipelineModelCompat.toPipelineModel(PipelineModelCompat.load(path)),
         PipelineModelCompat.fromPipelineModel(_).compatWrite,
-        Map("en" -> "explain_document_ml")
+        Seq("en" -> "explain_document_ml")
       )
     }
   }
