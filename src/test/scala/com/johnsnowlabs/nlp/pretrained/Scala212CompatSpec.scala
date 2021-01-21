@@ -14,10 +14,24 @@ import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach, FunSpec}
 
 import java.io.File
 
+/**
+  *  This should only be run with spark-nlp compiled with scala-2.11!
+  *
+  *  When compiled with scala-2.12, you can comment out the
+  *     it("Download & Save Standard + Compat")
+  *     it("Load Standard & Save Compat")
+  *  And test that the compat model can be read with scala-2.12 correctly, in:
+  *     it("Load Compat & Export zip")
+  **/
 class Scala212CompatSpec extends FunSpec with BeforeAndAfterAll with BeforeAndAfterEach {
 
+  // Standard format models directory. It uses java serialization, not compatible across scala versions.
   lazy val standardDir: File = new File(System.getProperty("user.home") + "/spark-nlp-models/standard")
+  // Compat format models directory. It uses structured parquet DataFrames. Compatible across scala versions.
   lazy val compatDir: File = new File(System.getProperty("user.home") + "/spark-nlp-models/compat")
+  // Export directory for zipped compat models using the standardized filename.
+  // This is the directory that should be uploaded to S3. Client code that wish to use pre-trained models with
+  // scala-2.12 should point to it instead of the default public location.
   lazy val exportDir: File = new File(System.getProperty("user.home") + "/spark-nlp-models/export")
 
   override def beforeAll(): Unit = {
@@ -58,6 +72,10 @@ class Scala212CompatSpec extends FunSpec with BeforeAndAfterAll with BeforeAndAf
           }
           it("Load Compat & Export zip") {
             val model = exportDef.compatReader.load(s"$compatDir/$fileName")
+            // saveModel will:
+            // - append version and timestamp to fhe filename
+            // - zip the model
+            // - update the manifest metadata file
             saveModel(
               name = name,
               language = Some(lang),
