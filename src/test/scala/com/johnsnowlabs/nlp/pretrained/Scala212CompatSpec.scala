@@ -48,25 +48,25 @@ class Scala212CompatSpec extends FunSpec with BeforeAndAfterAll with BeforeAndAf
       for ((lang, name) <- exportDef.models) yield {
         describe(s"${name}_$lang") {
           val fileName = s"${name}_$lang"
-//          it("Download & Save Standard + Compat") {
-//            val model = exportDef.download(name, Some(lang))
-//            exportDef.standardWriter(model).save(s"$standardDir/$fileName")
-//          }
-//          it("Load Standard & Save Compat") {
-//            val model = exportDef.standardReader.load(s"$standardDir/$fileName")
-//            exportDef.compatWriter(model).save(s"$compatDir/$fileName")
-//          }
+          it("Download & Save Standard + Compat") {
+            val model = exportDef.download(name, Some(lang))
+            exportDef.standardWriter(model).save(s"$standardDir/$fileName")
+          }
+          it("Load Standard & Save Compat") {
+            val model = exportDef.standardReader.load(s"$standardDir/$fileName")
+            exportDef.compatWriter(model).save(s"$compatDir/$fileName")
+          }
           it("Load Compat & Export zip") {
             val model = exportDef.compatReader.load(s"$compatDir/$fileName")
-//            saveModel(
-//              name = name,
-//              language = Some(lang),
-//              libVersion = Some(libVersion),
-//              sparkVersion = Some(sparkVersion),
-//              modelWriter = exportDef.compatWriter(model),
-//              folder = exportDir.toString,
-//              category = Some(exportDef.resourceType)
-//            )
+            saveModel(
+              name = name,
+              language = Some(lang),
+              libVersion = Some(libVersion),
+              sparkVersion = Some(sparkVersion),
+              modelWriter = exportDef.compatWriter(model),
+              folder = exportDir.toString,
+              category = Some(exportDef.resourceType)
+            )
           }
         }
       }
