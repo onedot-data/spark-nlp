@@ -1,10 +1,12 @@
 package com.johnsnowlabs.nlp.annotators.pos.perceptron
 
 import com.johnsnowlabs.nlp.annotators.common._
+import com.johnsnowlabs.nlp.pretrained.ResourceDownloader
 import com.johnsnowlabs.nlp.serialization.StructFeature
 import com.johnsnowlabs.nlp.{Annotation, AnnotatorModel, ParamsAndFeaturesReadable}
-import com.johnsnowlabs.nlp.pretrained.ResourceDownloader
 import org.apache.spark.ml.util.Identifiable
+import org.apache.spark.sql.Row
+import org.apache.spark.sql.types._
 
 /**
   * Part of speech tagger that might use different approaches
@@ -18,8 +20,31 @@ class PerceptronModel(override val uid: String) extends AnnotatorModel[Perceptro
   /** Internal structure for target sentences holding their range information which is used for annotation */
   private case class SentenceToBeTagged(tokenizedSentence: TokenizedSentence, start: Int, end: Int)
 
-  val model: StructFeature[AveragedPerceptron] =
-    new StructFeature[AveragedPerceptron](this, "POS Model")
+  val model: StructFeature[AveragedPerceptron] = {
+    new StructFeature[AveragedPerceptron](this, "POS Model",
+      schema = StructType(Seq(
+        StructField("tags", ArrayType(StringType)),
+        StructField("taggedWordBook", MapType(keyType = StringType, valueType = StringType)),
+        StructField("featuresWeight", MapType(keyType = StringType, valueType = MapType(
+          keyType = StringType, valueType = DoubleType
+        )))
+      )),
+      encode = struct => {
+        Row(
+          struct.tags,
+          struct.taggedWordBook,
+          struct.featuresWeight
+        )
+      },
+      decode = row => {
+        AveragedPerceptron(
+          tags = row.getAs[Seq[String]]("tags").toArray,
+          taggedWordBook = row.getAs[Map[String, String]]("taggedWordBook"),
+          featuresWeight = row.getAs[Map[String, Map[String, Double]]]("featuresWeight")
+        )
+      }
+    )
+  }
 
   override val outputAnnotatorType: AnnotatorType = POS
 
@@ -69,8 +94,9 @@ class PerceptronModel(override val uid: String) extends AnnotatorModel[Perceptro
 }
 
 trait PretrainedPerceptronModel {
-  def pretrained(name: String = "pos_anc", lang: String = "en", remoteLoc: String = ResourceDownloader.publicLoc): PerceptronModel =
+  def pretrained(name: String = "pos_anc", lang: String = "en", remoteLoc: String = ResourceDownloader.publicLoc): PerceptronModel = {
     ResourceDownloader.downloadModel(PerceptronModel, name, Option(lang), remoteLoc)
+  }
 }
 
 object PerceptronModel extends ParamsAndFeaturesReadable[PerceptronModel] with PretrainedPerceptronModel

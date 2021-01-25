@@ -2,15 +2,16 @@ package com.johnsnowlabs.nlp.annotators.spell.context
 
 import com.github.liblevenshtein.transducer.{Candidate, ITransducer}
 import com.johnsnowlabs.ml.tensorflow._
-import com.johnsnowlabs.nlp.annotators.ner.Verbose
-import com.johnsnowlabs.nlp.serialization._
 import com.johnsnowlabs.nlp._
+import com.johnsnowlabs.nlp.annotators.ner.Verbose
 import com.johnsnowlabs.nlp.annotators.spell.context.parser.SpecialClassParser
 import com.johnsnowlabs.nlp.pretrained.ResourceDownloader
+import com.johnsnowlabs.nlp.serialization._
 import org.apache.spark.broadcast.Broadcast
 import org.apache.spark.ml.param.{BooleanParam, FloatParam, IntArrayParam, IntParam}
 import org.apache.spark.ml.util.Identifiable
-import org.apache.spark.sql.{Dataset, SparkSession}
+import org.apache.spark.sql.types._
+import org.apache.spark.sql.{Dataset, Row, SparkSession}
 import org.slf4j.LoggerFactory
 
 import scala.collection.JavaConverters.iterableAsScalaIterableConverter
@@ -23,7 +24,7 @@ class ContextSpellCheckerModel(override val uid: String) extends AnnotatorModel[
   with ParamsAndFeaturesWritable
   with HasTransducerFeatures {
 
-  private val logger = LoggerFactory.getLogger("ContextSpellCheckerModel")
+  private val logger = LoggerFactory.getLogger(classOf[ContextSpellCheckerModel])
 
   override val tfFile: String = "bigone"
 
@@ -37,18 +38,25 @@ class ContextSpellCheckerModel(override val uid: String) extends AnnotatorModel[
     set(specialTransducers, transducers.toArray)
   }
 
-  val vocabFreq  = new MapFeature[String, Double](this, "vocabFreq")
-  def setVocabFreq(v: Map[String, Double]): this.type = set(vocabFreq,v)
+  val vocabFreq  = new MapFeature[String, Double](this, "vocabFreq", keyType = StringType, valueType = LongType)
+  def setVocabFreq(v: Map[String, Double]): this.type = set(vocabFreq, v)
 
-  val idsVocab = new MapFeature[Int, String](this, "idsVocab")
-  val vocabIds = new MapFeature[String, Int](this, "vocabIds")
+  val idsVocab = new MapFeature[Int, String](this, "idsVocab", keyType = IntegerType, valueType = StringType)
+  val vocabIds = new MapFeature[String, Int](this, "vocabIds", keyType = StringType, valueType = IntegerType)
 
   def setVocabIds(v: Map[String, Int]): this.type = {
     set(idsVocab, v.map(_.swap))
     set(vocabIds, v)
   }
 
-  val classes: MapFeature[Int, (Int, Int)] = new MapFeature(this, "classes")
+  val classes: MapFeature[Int, (Int, Int)] = new MapFeature(this, "classes", keyType = IntegerType, valueType = StructType(Seq(
+    StructField("_1", IntegerType),
+    StructField("_2", IntegerType)
+  )), decode = row => {
+    row.getAs[Int]("key") -> {
+      row.getAs[Int]("value._1") -> row.getAs[Int]("value._2")
+    }
+  })
   def setClasses(c:Map[Int, (Int, Int)]): this.type = set(classes, c)
 
   val wordMaxDistance = new IntParam(this, "wordMaxDistance", "Maximum distance for the generated candidates for every word, minimum 1.")
@@ -62,7 +70,22 @@ class ContextSpellCheckerModel(override val uid: String) extends AnnotatorModel[
   val gamma = new FloatParam(this, "gamma", "Controls the influence of individual word frequency in the decision.")
   def setGamma(g: Float):this.type = set(tradeoff, g)
 
-  val weights: MapFeature[String, Map[String, Float]] = new MapFeature[String, Map[String, Float]](this, "levenshteinWeights")
+  val weights: MapFeature[String, Map[String, Float]] = new MapFeature[String, Map[String, Float]](this, "levenshteinWeights",
+    keyType =  StringType,
+    valueType = ArrayType(
+      StructType(Seq(
+        StructField("key", StringType),
+        StructField("value", FloatType)
+      ))
+    ),
+    decode = row => {
+      row.getAs[String]("key") -> {
+        row.getAs[Seq[Row]]("value").map { innerRow =>
+          innerRow.getAs[String]("key") -> innerRow.getAs[Float]("value")
+        }.toMap
+      }
+    }
+  )
   def setWeights(w:Map[String, Map[String, Float]]): this.type = set(weights, w)
 
   val useNewLines = new BooleanParam(this, "trim", "When set to true new lines will be treated as any other character, when set to false" +

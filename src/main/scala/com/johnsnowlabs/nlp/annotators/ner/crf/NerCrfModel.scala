@@ -1,6 +1,6 @@
 package com.johnsnowlabs.nlp.annotators.ner.crf
 
-import com.johnsnowlabs.ml.crf.{FbCalculator, LinearChainCrfModel, VectorMath}
+import com.johnsnowlabs.ml.crf._
 import com.johnsnowlabs.nlp.AnnotatorType._
 import com.johnsnowlabs.nlp.annotators.common.Annotated.{NerTaggedSentence, PosTaggedSentence}
 import com.johnsnowlabs.nlp.annotators.common._
@@ -9,6 +9,9 @@ import com.johnsnowlabs.nlp.serialization.{MapFeature, StructFeature}
 import com.johnsnowlabs.nlp.{Annotation, AnnotatorModel, ParamsAndFeaturesReadable}
 import org.apache.spark.ml.param.{BooleanParam, StringArrayParam}
 import org.apache.spark.ml.util._
+import org.apache.spark.sql.Row
+import org.apache.spark.sql.catalyst.expressions.GenericRowWithSchema
+import org.apache.spark.sql.types._
 
 
 /*
@@ -20,8 +23,59 @@ class NerCrfModel(override val uid: String) extends AnnotatorModel[NerCrfModel] 
   def this() = this(Identifiable.randomUID("NER"))
 
   val entities = new StringArrayParam(this, "entities", "List of Entities to recognize")
-  val model: StructFeature[LinearChainCrfModel] = new StructFeature[LinearChainCrfModel](this, "crfModel")
-  val dictionaryFeatures: MapFeature[String, String] = new MapFeature[String, String](this, "dictionaryFeatures")
+  val model: StructFeature[LinearChainCrfModel] = new StructFeature[LinearChainCrfModel](this, "crfModel",
+    schema = StructType(Seq(
+      StructField("weights", ArrayType(FloatType)),
+      StructField("labels", ArrayType(StringType)),
+      StructField("attrs", ArrayType(StructType(Seq(
+        StructField("id", IntegerType),
+        StructField("name", StringType),
+        StructField("isNumerical", BooleanType)
+      )))),
+      StructField("attrFeatures", ArrayType(StructType(Seq(
+        StructField("id", IntegerType),
+        StructField("attrId", IntegerType),
+        StructField("label", IntegerType)
+      )))),
+      StructField("transitions", ArrayType(StructType(Seq(
+        StructField("stateFrom", IntegerType),
+        StructField("stateTo", IntegerType)
+      )))),
+      StructField("featuresStat", ArrayType(StructType(Seq(
+        StructField("frequency", IntegerType),
+        StructField("sum", FloatType)
+      ))))
+    )),
+    encode = struct => Row(
+      struct.weights,
+      struct.metadata.labels,
+      struct.metadata.attrs,
+      struct.metadata.attrFeatures,
+      struct.metadata.transitions,
+      struct.metadata.featuresStat
+    ),
+    decode = row => {
+      new LinearChainCrfModel(
+        row.getAs[Seq[Float]]("weights").toArray,
+        new DatasetMetadata(
+          labels = row.getAs[Seq[String]]("labels").toArray,
+          attrs = row.getAs[Seq[GenericRowWithSchema]]("attrs")
+            .map(inner => Attr(inner.getAs[Int]("id"), inner.getAs[String]("name"), inner.getAs[Boolean]("isNumerical")))
+            .toArray,
+          attrFeatures = row.getAs[Seq[GenericRowWithSchema]]("attrFeatures")
+            .map(inner => AttrFeature(inner.getAs[Int]("id"), inner.getAs[Int]("attrId"), inner.getAs[Int]("label")))
+            .toArray,
+          transitions = row.getAs[Seq[GenericRowWithSchema]]("transitions")
+            .map(inner => Transition(inner.getAs[Int]("stateFrom"), inner.getAs[Int]("stateTo")))
+            .toArray,
+          featuresStat = row.getAs[Seq[GenericRowWithSchema]]("featuresStat")
+            .map(inner => AttrStat(inner.getAs[Int]("frequency"), inner.getAs[Float]("sum")))
+            .toArray
+        )
+      )
+    }
+  )
+  val dictionaryFeatures: MapFeature[String, String] = new MapFeature[String, String](this, "dictionaryFeatures", keyType = StringType, valueType = StringType)
   val includeConfidence = new BooleanParam(this, "includeConfidence", "whether or not to calculate prediction confidence by token, includes in metadata")
 
   def setModel(crf: LinearChainCrfModel): NerCrfModel = set(model, crf)

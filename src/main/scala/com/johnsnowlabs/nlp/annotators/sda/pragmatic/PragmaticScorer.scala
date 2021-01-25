@@ -21,7 +21,7 @@ class PragmaticScorer(
                        REVERT_MULTIPLIER: Double = -1.0
                      ) extends Serializable {
 
-  private val logger = LoggerFactory.getLogger("PragmaticScorer")
+  private val logger = LoggerFactory.getLogger(getClass)
 
   /**
     * Internal class to summarize dictionary key information

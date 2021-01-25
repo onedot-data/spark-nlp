@@ -6,6 +6,7 @@ import com.johnsnowlabs.nlp.serialization.{MapFeature, SetFeature}
 import com.johnsnowlabs.nlp.{Annotation, AnnotatorModel, ParamsAndFeaturesReadable}
 import org.apache.spark.ml.param.{DoubleParam, IntParam, LongParam}
 import org.apache.spark.ml.util.Identifiable
+import org.apache.spark.sql.types.{LongType, StringType}
 
 class ViveknSentimentModel(override val uid: String) extends AnnotatorModel[ViveknSentimentModel] with ViveknSentimentUtils {
 
@@ -15,8 +16,8 @@ class ViveknSentimentModel(override val uid: String) extends AnnotatorModel[Vive
 
   override val inputAnnotatorTypes: Array[AnnotatorType] = Array(TOKEN, DOCUMENT)
 
-  protected val positive: MapFeature[String, Long] = new MapFeature(this, "positive_sentences")
-  protected val negative: MapFeature[String, Long] = new MapFeature(this, "negative_sentences")
+  protected val positive: MapFeature[String, Long] = new MapFeature[String, Long](this, "positive_sentences", keyType = StringType, valueType = LongType)
+  protected val negative: MapFeature[String, Long] = new MapFeature[String, Long](this, "negative_sentences", keyType = StringType, valueType = LongType)
   protected val words: SetFeature[String] = new SetFeature[String](this, "words")
 
   protected val positiveTotals: LongParam = new LongParam(this, "positive_totals", "count of positive words")

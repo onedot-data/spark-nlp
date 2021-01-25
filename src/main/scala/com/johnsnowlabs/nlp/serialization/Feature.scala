@@ -9,12 +9,17 @@ import com.johnsnowlabs.nlp.util.io.ResourceHelper
 import com.johnsnowlabs.util.ConfigLoader
 import org.apache.hadoop.fs.{FileSystem, Path}
 import org.apache.spark.broadcast.Broadcast
-import org.apache.spark.sql.{Encoder, Encoders, SparkSession}
+import org.apache.spark.sql.types.{DataType, StructField, StructType}
+import org.apache.spark.sql.{Encoder, Encoders, Row, SparkSession}
+import org.slf4j.LoggerFactory
 
+import scala.collection.JavaConverters._
 import scala.reflect.ClassTag
 
 abstract class Feature[Serializable1, Serializable2, TComplete: ClassTag](model: HasFeatures, val name: String) extends Serializable {
   model.features.append(this)
+
+  private val logger = LoggerFactory.getLogger(getClass)
 
   private val config = ConfigLoader.retrieve
   private val spark = ResourceHelper.spark
@@ -29,25 +34,33 @@ abstract class Feature[Serializable1, Serializable2, TComplete: ClassTag](model:
 
   final protected var fallbackLazyValue: Option[() => TComplete] = None
 
-  final def serialize(spark: SparkSession, path: String, field: String, value: TComplete): Unit = {
-    serializationMode match {
+  final def serialize(spark: SparkSession, path: String, field: String, value: TComplete, mode: Option[String] = None): Unit = {
+    val realMode = mode.getOrElse(serializationMode)
+    logger.debug(s"serialize[$realMode]($path, $field, ${value.getClass.getCanonicalName})")
+    realMode match {
       case "dataset" => serializeDataset(spark, path, field, value)
       case "object" => serializeObject(spark, path, field, value)
+      case "compat" => serializeObjectCompat(spark, path, field, value)
       case _ => throw new IllegalArgumentException("Illegal performance.serialization setting. Can be 'dataset' or 'object'")
     }
   }
 
-  final def serializeInfer(spark: SparkSession, path: String, field: String, value: Any): Unit =
-    serialize(spark, path, field, value.asInstanceOf[TComplete])
+  final def serializeInfer(spark: SparkSession, path: String, field: String, value: Any, mode: Option[String] = None): Unit =
+    serialize(spark, path, field, value.asInstanceOf[TComplete], mode)
 
-  final def deserialize(spark: SparkSession, path: String, field: String): Option[_] = {
+  final def deserialize(spark: SparkSession, path: String, field: String, mode: Option[String] = None): Option[_] = {
+    val realMode = mode.getOrElse(serializationMode)
     if (broadcastValue.isDefined || rawValue.isDefined)
       throw new Exception(s"Trying de deserialize an already set value for ${this.name}. This should not happen.")
-    serializationMode match {
+    logger.debug(s"deserialize[$realMode]($path, $field)")
+    val result = realMode match {
       case "dataset" => deserializeDataset(spark, path, field)
       case "object" => deserializeObject(spark, path, field)
+      case "compat" => deserializeObjectCompat(spark, path, field)
       case _ => throw new IllegalArgumentException("Illegal performance.serialization setting. Can be 'dataset' or 'object'")
     }
+    logger.debug(s"deserialize[$realMode]($path, $field): DONE: ${result.map(_.getClass.getCanonicalName)}")
+    result
   }
 
   protected def serializeDataset(spark: SparkSession, path: String, field: String, value: TComplete): Unit
@@ -57,6 +70,10 @@ abstract class Feature[Serializable1, Serializable2, TComplete: ClassTag](model:
   protected def serializeObject(spark: SparkSession, path: String, field: String, value: TComplete): Unit
 
   protected def deserializeObject(spark: SparkSession, path: String, field: String): Option[_]
+
+  protected def serializeObjectCompat(spark: SparkSession, path: String, field: String, value: TComplete): Unit
+
+  protected def deserializeObjectCompat(spark: SparkSession, path: String, field: String): Option[_]
 
   final protected def getFieldPath(path: String, field: String): Path =
     Path.mergePaths(new Path(path), new Path("/fields/" + field))
@@ -103,8 +120,11 @@ abstract class Feature[Serializable1, Serializable2, TComplete: ClassTag](model:
 
 }
 
-class StructFeature[TValue: ClassTag](model: HasFeatures, override val name: String)
-  extends Feature[TValue, TValue, TValue](model, name) {
+class StructFeature[TValue: ClassTag](model: HasFeatures,
+                                      override val name: String,
+                                      schema: StructType,
+                                      encode: TValue => Row,
+                                      decode: Row => TValue) extends Feature[TValue, TValue, TValue](model, name) {
 
   implicit val encoder: Encoder[TValue] = Encoders.kryo[TValue]
 
@@ -119,6 +139,22 @@ class StructFeature[TValue: ClassTag](model: HasFeatures, override val name: Str
     val dataPath = getFieldPath(path, field)
     if (fs.exists(dataPath)) {
       Some(spark.sparkContext.objectFile[TValue](dataPath.toString).first)
+    } else {
+      None
+    }
+  }
+
+  override protected def serializeObjectCompat(spark: SparkSession, path: String, field: String, value: TValue): Unit = {
+    val dataPath = getFieldPath(path, field)
+    spark.createDataFrame(Seq(encode(value)).asJava, schema).write.parquet(dataPath.toString)
+  }
+
+  override protected def deserializeObjectCompat(spark: SparkSession, path: String, field: String): Option[TValue] = {
+    val uri = new java.net.URI(path.replaceAllLiterally("\\", "/"))
+    val fs: FileSystem = FileSystem.get(uri, spark.sparkContext.hadoopConfiguration)
+    val dataPath = getFieldPath(path, field)
+    if (fs.exists(dataPath)) {
+      spark.read.parquet(dataPath.toString).map(decode).collect().headOption
     } else {
       None
     }
@@ -142,17 +178,27 @@ class StructFeature[TValue: ClassTag](model: HasFeatures, override val name: Str
 
 }
 
-class MapFeature[TKey: ClassTag, TValue: ClassTag](model: HasFeatures, override val name: String)
+class MapFeature[TKey: ClassTag, TValue: ClassTag](model: HasFeatures,
+                                                   override val name: String,
+                                                   keyType: DataType,
+                                                   valueType: DataType,
+                                                   decode: Row => (TKey, TValue) = (row: Row) => {
+                                                     row.getAs[TKey]("key") -> row.getAs[TValue]("value")
+                                                   }
+                                                  )
   extends Feature[TKey, TValue, Map[TKey, TValue]](model, name) {
 
   implicit val encoder: Encoder[(TKey, TValue)] = Encoders.kryo[(TKey, TValue)]
+
+  val schema: StructType = StructType(Seq(
+    StructField("key", keyType),
+    StructField("value", valueType)
+  ))
 
   override def serializeObject(spark: SparkSession, path: String, field: String, value: Map[TKey, TValue]): Unit = {
     val dataPath = getFieldPath(path, field)
     spark.sparkContext.parallelize(value.toSeq).saveAsObjectFile(dataPath.toString)
   }
-
-
 
   override def deserializeObject(spark: SparkSession, path: String, field: String): Option[Map[TKey, TValue]] = {
     val uri = new java.net.URI(path.replaceAllLiterally("\\", "/"))
@@ -165,13 +211,35 @@ class MapFeature[TKey: ClassTag, TValue: ClassTag](model: HasFeatures, override 
     }
   }
 
+  override def serializeObjectCompat(spark: SparkSession, path: String, field: String, value: Map[TKey, TValue]): Unit = {
+    val dataPath = getFieldPath(path, field)
+    spark.createDataFrame(
+      value.toSeq.map(entry => Row(entry._1, entry._2)).asJava,
+      schema
+    ).write.save(dataPath.toString)
+  }
+
+  override def deserializeObjectCompat(spark: SparkSession, path: String, field: String): Option[Map[TKey, TValue]] = {
+    val uri = new java.net.URI(path.replaceAllLiterally("\\", "/"))
+    val fs: FileSystem = FileSystem.get(uri, spark.sparkContext.hadoopConfiguration)
+    val dataPath = getFieldPath(path, field)
+    if (fs.exists(dataPath)) {
+      Some(
+        spark.read.parquet(dataPath.toString)
+          .map(decode)
+          .collectAsList().asScala
+          .toMap
+      )
+    } else {
+      None
+    }
+  }
+
   override def serializeDataset(spark: SparkSession, path: String, field: String, value: Map[TKey, TValue]): Unit = {
     import spark.implicits._
     val dataPath = getFieldPath(path, field)
     value.toSeq.toDS.write.mode("overwrite").parquet(dataPath.toString)
   }
-
-
 
   override def deserializeDataset(spark: SparkSession, path: String, field: String): Option[Map[TKey, TValue]] = {
     val uri = new java.net.URI(path.replaceAllLiterally("\\", "/"))
@@ -183,7 +251,6 @@ class MapFeature[TKey: ClassTag, TValue: ClassTag](model: HasFeatures, override 
       None
     }
   }
-
 }
 
 class ArrayFeature[TValue: ClassTag](model: HasFeatures, override val name: String)
@@ -205,6 +272,14 @@ class ArrayFeature[TValue: ClassTag](model: HasFeatures, override val name: Stri
     } else {
       None
     }
+  }
+
+  override protected def serializeObjectCompat(spark: SparkSession, path: String, field: String, value: Array[TValue]): Unit = {
+    serializeObject(spark, path, field, value)
+  }
+
+  override protected def deserializeObjectCompat(spark: SparkSession, path: String, field: String): Option[_] = {
+    deserializeObject(spark, path, field)
   }
 
   override def serializeDataset(spark: SparkSession, path: String, field: String, value: Array[TValue]): Unit = {
@@ -246,6 +321,14 @@ class SetFeature[TValue: ClassTag](model: HasFeatures, override val name: String
     }
   }
 
+  override def serializeObjectCompat(spark: SparkSession, path: String, field: String, value: Set[TValue]): Unit = {
+    serializeObject(spark, path, field, value)
+  }
+
+  override def deserializeObjectCompat(spark: SparkSession, path: String, field: String): Option[_] = {
+    deserializeObject(spark, path, field)
+  }
+
   override def serializeDataset(spark: SparkSession, path: String, field: String, value: Set[TValue]): Unit = {
     val dataPath = getFieldPath(path, field)
     spark.createDataset(value.toSeq).write.mode("overwrite").parquet(dataPath.toString)
@@ -272,7 +355,6 @@ class TransducerFeature(model: HasFeatures, override val name: String)
     val dataPath = getFieldPath(path, field)
     val bytes = serializer.serialize(trans)
     spark.sparkContext.parallelize(bytes.toSeq, 1).saveAsObjectFile(dataPath.toString)
-
   }
 
   override def deserializeObject(spark: SparkSession, path: String, field: String): Option[ITransducer[Candidate]] = {
@@ -289,6 +371,13 @@ class TransducerFeature(model: HasFeatures, override val name: String)
     }
   }
 
+  override protected def serializeObjectCompat(spark: SparkSession, path: String, field: String, value: ITransducer[Candidate]): Unit =  {
+    serializeObject(spark, path, field, value)
+  }
+
+  override protected def deserializeObjectCompat(spark: SparkSession, path: String, field: String): Option[ITransducer[Candidate]] = {
+    deserializeObject(spark, path, field)
+  }
 
   override def serializeDataset(spark: SparkSession, path: String, field: String, trans: ITransducer[Candidate]): Unit = {
     val serializer = new PlainTextSerializer
@@ -321,7 +410,6 @@ class TransducerSeqFeature(model: HasFeatures, override val name: String)
   implicit val encoder: Encoder[SpecialClassParser] = Encoders.kryo[SpecialClassParser]
 
   override def serializeObject(spark: SparkSession, path: String, field: String, specialClasses: Seq[SpecialClassParser]): Unit = {
-    import spark.implicits._
     val dataPath = getFieldPath(path, field)
     val serializer = new PlainTextSerializer
 
@@ -341,7 +429,6 @@ class TransducerSeqFeature(model: HasFeatures, override val name: String)
       val transBytes = serializer.serialize(transducer)
       spark.sparkContext.parallelize(transBytes.toSeq, 1).
         saveAsObjectFile(s"${dataPath.toString}/${label}transducer")
-
     }
   }
 
@@ -371,6 +458,14 @@ class TransducerSeqFeature(model: HasFeatures, override val name: String)
     } else {
       None
     }
+  }
+
+  override protected def serializeObjectCompat(spark: SparkSession, path: String, field: String, value: Seq[SpecialClassParser]): Unit = {
+    serializeObject(spark, path, field, value)
+  }
+
+  override protected def deserializeObjectCompat(spark: SparkSession, path: String, field: String): Option[Seq[SpecialClassParser]] = {
+    deserializeObject(spark, path, field)
   }
 
   override def serializeDataset(spark: SparkSession, path: String, field: String, specialClasses: Seq[SpecialClassParser]): Unit = {
@@ -429,7 +524,6 @@ class TransducerSeqFeature(model: HasFeatures, override val name: String)
       None
     }
   }
-
 
 }
 

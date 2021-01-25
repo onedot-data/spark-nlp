@@ -1,7 +1,6 @@
 package com.johnsnowlabs.nlp.util.regex
 
 import com.johnsnowlabs.nlp.annotators.sbd.pragmatic.RuleSymbols
-import org.slf4j.LoggerFactory
 
 import scala.util.matching.Regex
 
@@ -14,6 +13,7 @@ import scala.util.matching.Regex
   * @param matchStrategy How to decide on regex search
   * @param transformStrategy How to decide when replacing or transforming content with Regex
   */
+@SerialVersionUID(value = -6864579835492559496L)
 class RuleFactory(matchStrategy: MatchStrategy.MatchStrategy,
                   transformStrategy: TransformStrategy.TransformStrategy = TransformStrategy.NO_TRANSFORM)
   extends RuleSymbols with Serializable {
@@ -25,8 +25,8 @@ class RuleFactory(matchStrategy: MatchStrategy.MatchStrategy,
     */
   protected case class RuleMatch(content: Regex.Match, identifier: String)
 
-  import TransformStrategy._
   import MatchStrategy._
+  import TransformStrategy._
 
   /** Helper functions to identify context in a word for debugging */
   private def logSubStartHelper(start: Int): Int = if (start > 10) start - 10 else  0
@@ -52,6 +52,10 @@ class RuleFactory(matchStrategy: MatchStrategy.MatchStrategy,
     rules = Seq.empty[RegexRule]
     this
   }
+
+  def getRules: Seq[RegexRule] = rules
+
+  def getSymbolRules: Seq[(String, RegexRule)] = symbolRules
 
   /** Shortcut functions, no need to execute them on runtime since a strategy won't change in lifetime of Factory */
   private val findMatchFunc = (text: String) => matchStrategy match {
@@ -124,6 +128,11 @@ class RuleFactory(matchStrategy: MatchStrategy.MatchStrategy,
     this
   }
 
+  def setSymbolRules(newRules: Seq[(String, RegexRule)]): this.type = {
+    symbolRules = newRules
+    this
+  }
+
   /**Applies factory match strategy to find matches and returns any number of Matches*/
   def findMatch(text: String): Seq[RuleMatch] = {
     findMatchFunc(text)
@@ -172,6 +181,7 @@ object RuleFactory {
 /**
   * Allowed strategies for [[RuleFactory]] applications regarding replacement
   */
+@SerialVersionUID(value = 5813697535646892002L)
 object TransformStrategy extends Enumeration {
   type TransformStrategy = Value
   val NO_TRANSFORM,
@@ -188,6 +198,7 @@ object TransformStrategy extends Enumeration {
 /**
   * Allowed strategies for [[RuleFactory]] applications regarding matching
   */
+@SerialVersionUID(value = -745082680687074542L)
 object MatchStrategy extends Enumeration {
   type MatchStrategy = Value
   val MATCH_ALL,

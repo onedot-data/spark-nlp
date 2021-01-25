@@ -7,7 +7,7 @@ import scala.util.Random
 
 object Utilities {
 
-  private val logger = LoggerFactory.getLogger("SpellCheckersUtilities")
+  private val logger = LoggerFactory.getLogger(getClass)
 
   private val alphabet = "abcdefghijjklmnopqrstuvwxyz".toCharArray
   private val vowels = "aeiouy".toCharArray

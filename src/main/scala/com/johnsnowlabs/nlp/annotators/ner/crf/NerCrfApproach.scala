@@ -23,7 +23,7 @@ class NerCrfApproach(override val uid: String)
 
   def this() = this(Identifiable.randomUID("NER"))
 
-  private val logger = LoggerFactory.getLogger("NerCrfApproach")
+  private val logger = LoggerFactory.getLogger(classOf[NerCrfApproach])
 
   override val description = "CRF based Named Entity Recognition Tagger"
   override val inputAnnotatorTypes = Array(DOCUMENT, TOKEN, POS, WORD_EMBEDDINGS)

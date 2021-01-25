@@ -1,12 +1,23 @@
 package com.johnsnowlabs.nlp.pretrained
 
-import java.sql.Timestamp
+import com.johnsnowlabs.nlp.annotator.WordEmbeddingsModel
+import com.johnsnowlabs.nlp.annotators.ner.crf.NerCrfModel
+import com.johnsnowlabs.nlp.annotators.pos.perceptron.PerceptronModel
+import com.johnsnowlabs.nlp.util.io.ResourceHelper
 import com.johnsnowlabs.util.Version
-import org.scalatest.FlatSpec
+import org.apache.spark.ml.{PipelineModel, PipelineModelCompat}
+import org.scalatest.{BeforeAndAfterEach, FlatSpec}
+
+import java.sql.Timestamp
 
 
-class ResourceDownloaderSpec extends FlatSpec {
+class ResourceDownloaderSpec extends FlatSpec with BeforeAndAfterEach {
   val b = CloudTestResources
+
+  override def beforeEach(): Unit = {
+    super.beforeEach()
+    ResourceHelper.spark
+  }
 
   "CloudResourceMetadata" should "serialize and deserialize correctly" in {
     val resource = new ResourceMetadata("name",
@@ -40,5 +51,17 @@ class ResourceDownloaderSpec extends FlatSpec {
 
     assert(found.isDefined)
     assert(found.get == b.name_en_old)
+  }
+
+  "ResourceDownloader" should "list all available public models" in {
+    for (lang <- Seq("en", "de", "fr", "it")) {
+      ResourceDownloader.showPublicModels(lang)
+    }
+  }
+
+  "ResourceDownloader" should "list all available public pipelines" in {
+    for (lang <- Seq("en", "de", "fr", "it")) {
+      ResourceDownloader.showPublicPipelines(lang)
+    }
   }
 }

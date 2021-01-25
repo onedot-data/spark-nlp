@@ -28,7 +28,7 @@ class ContextSpellCheckerApproach(override val uid: String) extends
 
   override val description: String = "Context Spell Checker"
 
-  private val logger = LoggerFactory.getLogger("ContextSpellCheckerApproach")
+  private val logger = LoggerFactory.getLogger(classOf[ContextSpellCheckerApproach])
 
   val trainCorpusPath = new Param[String](this, "trainCorpusPath", "Path to the training corpus text file.")
   def setTrainCorpusPath(path: String): this.type = set(trainCorpusPath, path)

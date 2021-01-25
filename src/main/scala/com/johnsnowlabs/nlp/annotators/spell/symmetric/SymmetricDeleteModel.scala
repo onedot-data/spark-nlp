@@ -1,10 +1,11 @@
 package com.johnsnowlabs.nlp.annotators.spell.symmetric
 
 import com.johnsnowlabs.nlp.annotators.spell.util.Utilities
+import com.johnsnowlabs.nlp.pretrained.ResourceDownloader
 import com.johnsnowlabs.nlp.serialization.MapFeature
 import com.johnsnowlabs.nlp.{Annotation, AnnotatorModel, ParamsAndFeaturesReadable}
-import com.johnsnowlabs.nlp.pretrained.ResourceDownloader
 import org.apache.spark.ml.util.Identifiable
+import org.apache.spark.sql.types._
 import org.slf4j.LoggerFactory
 
 import scala.collection.immutable.HashSet
@@ -33,14 +34,25 @@ class SymmetricDeleteModel(override val uid: String) extends AnnotatorModel[Symm
   override val inputAnnotatorTypes: Array[AnnotatorType] = Array(TOKEN)
 
   protected val derivedWords: MapFeature[String, (List[String], Long)] =
-    new MapFeature(this, "derivedWords")
+    new MapFeature(this, "derivedWords",
+      keyType = StringType,
+      valueType = StructType(Seq(
+        StructField("words", ArrayType(StringType)),
+        StructField("wordValue", LongType)
+      )),
+      decode = row => {
+        row.getAs[String]("key") -> {
+          row.getAs[Seq[String]]("value.words").toList -> row.getAs[Long]("value.wordValue")
+        }
+      }
+    )
 
-  protected val dictionary: MapFeature[String, Long] = new MapFeature(this, "dictionary")
+  protected val dictionary: MapFeature[String, Long] = new MapFeature[String, Long](this, "dictionary", keyType = StringType, valueType = LongType)
 
   def setDictionary(value: Map[String, Long]): this.type = set(dictionary, value)
   def setDerivedWords(value: Map[String, (List[String], Long)]): this.type = set(derivedWords, value)
 
-  private val logger = LoggerFactory.getLogger("SymmetricDeleteApproach")
+  private val logger = LoggerFactory.getLogger(classOf[SymmetricDeleteModel])
 
   private lazy val allWords: HashSet[String] = {
     HashSet($$(derivedWords).keys.toSeq.map(_.toLowerCase): _*)

@@ -23,6 +23,7 @@ import com.johnsnowlabs.util.{Build, ConfigHelper, FileHelper, Version}
 import org.apache.hadoop.fs.FileSystem
 import org.apache.spark.ml.util.DefaultParamsReadable
 import org.apache.spark.ml.{PipelineModel, PipelineStage}
+import org.slf4j.LoggerFactory
 
 import scala.collection.mutable.{ListBuffer, Map}
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -53,6 +54,8 @@ trait ResourceDownloader {
 
 object ResourceDownloader {
 
+  private val logger = LoggerFactory.getLogger(getClass)
+
   val fs = FileSystem.get(ResourceHelper.spark.sparkContext.hadoopConfiguration)
 
   def s3Bucket = ConfigHelper.getConfigValueOrElse(ConfigHelper.pretrainedS3BucketKey, "auxdata.johnsnowlabs.com")
@@ -76,7 +79,6 @@ object ResourceDownloader {
 
   private def fetchcredentials(): Option[AWSCredentials] = {
     try {
-
       Some(new DefaultAWSCredentialsProviderChain().getCredentials)
     } catch {
       case awse: AmazonClientException => {
@@ -84,6 +86,7 @@ object ResourceDownloader {
 
           val key = ResourceHelper.spark.sparkContext.hadoopConfiguration.get("fs.s3a.access.key")
           val secret = ResourceHelper.spark.sparkContext.hadoopConfiguration.get("fs.s3a.secret.key")
+          logger.trace(s"Loaded AWS credentials: ACCESS_KEY := $key")
 
           Some(new BasicAWSCredentials(key, secret))
         } else {
@@ -299,10 +302,10 @@ object ResourceDownloader {
     }
     var download_finished = false
     var path: Option[String] = None
-    println(request.name + " download started this may take some time.")
+    logger.info(request.name + " download started this may take some time.")
     val file_size = getDownloadSize(request.name, request.language, request.folder)
     require(!file_size.equals("-1"), "Can not find the resource to download please check the name!")
-    println("Approximate size to download " + file_size)
+    logger.info("Approximate size to download " + file_size)
 
     val states = Array(" | ", " / ", " — ", " \\ ")
     var nextc = 0
@@ -326,7 +329,7 @@ object ResourceDownloader {
     }
 
     require(path.isDefined, s"Was not found appropriate resource to download for request: $request with downloader: $defaultDownloader")
-    println("Download done! Loading the resource.")
+    logger.info(s"Download done! Loading the resource '${request.name}${request.language.map("_" + _).getOrElse("")}'")
     path.get
   }
 
@@ -384,10 +387,8 @@ object ResourceDownloader {
       size = defaultDownloader.getDownloadSize(ResourceRequest(name, language, folder))
     }
     size match {
-      case Some(downloadBytes) => return FileHelper.getHumanReadableFileSize(downloadBytes)
-      case None => return "-1"
-
-
+      case Some(downloadBytes) => FileHelper.getHumanReadableFileSize(downloadBytes)
+      case None => "-1"
     }
   }
 }

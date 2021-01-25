@@ -1,10 +1,9 @@
 package com.johnsnowlabs.nlp.annotators.spell.context
-import com.esotericsoftware.kryo.Serializer
-import com.esotericsoftware.kryo.Kryo
+import com.esotericsoftware.kryo.{Kryo, Serializer}
 import com.esotericsoftware.kryo.io.{Input, Output}
 import com.github.liblevenshtein.proto.LibLevenshteinProtos.DawgNode
 import com.github.liblevenshtein.serialization.PlainTextSerializer
-import com.github.liblevenshtein.transducer.{Candidate, ITransducer, Transducer}
+import com.github.liblevenshtein.transducer.{Candidate, Transducer}
 import org.apache.spark.serializer.KryoRegistrator
 
 class ContextSpellRegistrator extends KryoRegistrator {

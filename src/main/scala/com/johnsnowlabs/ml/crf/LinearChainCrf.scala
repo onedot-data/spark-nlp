@@ -9,7 +9,7 @@ import scala.util.Random
 // ToDo Make c0 estimation before training
 class LinearChainCrf(val params: CrfParams) {
 
-  private val logger = LoggerFactory.getLogger("CRF")
+  private val logger = LoggerFactory.getLogger(classOf[LinearChainCrf])
 
   def log(value: => String, minLevel: Verbose.Level): Unit = {
     if (minLevel >= params.verbose) {

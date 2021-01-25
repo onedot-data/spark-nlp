@@ -5,6 +5,7 @@ import com.johnsnowlabs.nlp.serialization.MapFeature
 import com.johnsnowlabs.nlp.{Annotation, AnnotatorModel, ParamsAndFeaturesReadable}
 import org.apache.spark.ml.param.DoubleParam
 import org.apache.spark.ml.util.Identifiable
+import org.apache.spark.sql.types.StringType
 
 /**
   * Created by saif on 12/06/2017.
@@ -19,7 +20,7 @@ class SentimentDetectorModel(override val uid: String) extends AnnotatorModel[Se
 
   import com.johnsnowlabs.nlp.AnnotatorType._
 
-  val sentimentDict = new MapFeature[String, String](this, "sentimentDict")
+  val sentimentDict = new MapFeature[String, String](this, "sentimentDict", keyType = StringType, valueType = StringType)
 
   lazy val model: PragmaticScorer =
     new PragmaticScorer($$(sentimentDict), $(positiveMultiplier), $(negativeMultiplier), $(incrementMultiplier), $(decrementMultiplier), $(reverseMultiplier))

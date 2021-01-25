@@ -1,23 +1,40 @@
 
 val is_gpu = System.getProperty("is_gpu","false")
-val is_spark23 = System.getProperty("is_spark23","false")
+val is_spark23 = System.getProperty("is_spark23", "false")
+val is_spark30 = System.getProperty("is_spark30", "true")
 
 val spark23Ver = "2.3.4"
 val spark24Ver = "2.4.6"
-val sparkVer = if (is_spark23=="false") spark24Ver else spark23Ver
+val spark30Ver = "3.0.1"
+val sparkVer = {
+  if (is_spark30=="true") {
+    spark30Ver
+  } else if (is_spark23=="false") {
+    spark24Ver
+  } else {
+    spark23Ver
+  }
+}
 val scalaVer = "2.12.12"
 val scalaTestVersion = "3.0.8"
 
 /** Package attributes */
-
-if (is_gpu.equals("true") && is_spark23.equals("true")){
-  name := "spark-nlp-gpu-spark23"
-}else if (is_gpu.equals("true") && is_spark23.equals("false")){
-  name := "spark-nlp-gpu"
-}else if (is_gpu.equals("false") && is_spark23.equals("true")){
-  name := "spark-nlp-spark23"
-}else{
-  name := "spark-nlp"
+if (is_spark30.equals("true")) {
+  if (is_gpu.equals("true")) {
+    name := "spark-nlp-gpu"
+  } else {
+    name := "spark-nlp"
+  }
+} else {
+  if (is_gpu.equals("true") && is_spark23.equals("true")) {
+    name := "spark-nlp-gpu-spark23"
+  } else if (is_gpu.equals("true") && is_spark23.equals("false")) {
+    name := "spark-nlp-gpu-spark24"
+  } else if (is_gpu.equals("false") && is_spark23.equals("true")) {
+    name := "spark-nlp-spark23"
+  } else {
+    name := "spark-nlp-spark24"
+  }
 }
 
 
@@ -27,7 +44,7 @@ organization:= "com.johnsnowlabs.nlp"
 // since the format is incompatible, this does not matter much.
 // If we manage to support the old binary format, switching the version to a clean "2.2.2"
 // would build the correct url.
-version := "2.2.2-onedot1"
+version := "2.2.2.3-onedot"
 
 scalaVersion in ThisBuild := scalaVer
 
@@ -102,31 +119,23 @@ scalacOptions in (Compile, doc) ++= Seq(
 )
 target in Compile in doc := baseDirectory.value / "docs/api"
 
-lazy val analyticsDependencies =
-  if (is_spark23=="false"){
-    Seq(
-      "org.apache.spark" %% "spark-core" % sparkVer % "provided",
-      "org.apache.spark" %% "spark-mllib" % sparkVer % "provided"
-    )
-  } else {
-    Seq(
-      "org.apache.spark" %% "spark-core" % spark23Ver % "provided",
-      "org.apache.spark" %% "spark-mllib" % spark23Ver % "provided"
-    )
-  }
+lazy val analyticsDependencies = Seq(
+  "org.apache.spark" %% "spark-core" % sparkVer % "provided",
+  "org.apache.spark" %% "spark-mllib" % sparkVer % "provided"
+)
 
 lazy val testDependencies = Seq(
   "org.scalatest" %% "scalatest" % scalaTestVersion % "test"
 )
 
 val awsJavaSdkVersion = "1.11.828"
-val hadoopVersion = "2.10.0"
+val hadoopVersion = "3.2.1"
 
 lazy val utilDependencies = Seq(
   "com.amazonaws" % "aws-java-sdk-s3" % awsJavaSdkVersion % Provided,
   "com.amazonaws" % "aws-java-sdk-kms" % awsJavaSdkVersion % Provided,
   "com.amazonaws" % "aws-java-sdk-core" % awsJavaSdkVersion % Provided,
-  "com.typesafe" % "config" % "1.3.0",
+  "com.typesafe" % "config" % "1.3.1",
   "org.apache.ivy" % "ivy" % "2.4.0",
   "org.rocksdb" % "rocksdbjni" % "6.5.3",
   "org.apache.hadoop" % "hadoop-aws" %  hadoopVersion % Provided,
@@ -136,7 +145,7 @@ lazy val utilDependencies = Seq(
     exclude("com.google.guava", "guava")
     exclude("org.apache.commons", "commons-lang3"),
   "com.navigamez" % "greex" % "1.0",
-  "org.json4s" %% "json4s-ext" % "3.5.3"
+  "org.json4s" %% "json4s-ext" % "3.6.6"
 )
 
 
@@ -191,12 +200,6 @@ scalacOptions ++= Seq(
 //  "-Xcheckinit",                       // Wrap field accessors to throw an exception on uninitialized access.
   "-Xlint:type-parameter-shadow",      // A local type parameter shadows a type already in scope.
   "-Ywarn-dead-code",                  // Warn when dead code is identified.
-  "-Ywarn-unused:implicits",           // Warn if an implicit parameter is unused.
-  "-Ywarn-unused:imports",             // Warn if an import selector is not referenced.
-  "-Ywarn-unused:locals",              // Warn if a local definition is unused.
-  "-Ywarn-unused:params",              // Warn if a value parameter is unused.
-  "-Ywarn-unused:patvars",             // Warn if a variable bound in a pattern is unused.
-  "-Ywarn-unused:privates",            // Warn if a private member is unused.
   "-Ywarn-value-discard"               // Warn when non-Unit expression results are unused.
 )
 scalacOptions in(Compile, doc) ++= Seq(

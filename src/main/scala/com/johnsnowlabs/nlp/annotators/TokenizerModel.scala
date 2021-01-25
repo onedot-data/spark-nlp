@@ -1,17 +1,14 @@
 package com.johnsnowlabs.nlp.annotators
 
-import java.util.regex.Pattern
-
 import com.johnsnowlabs.nlp.annotators.common._
-import com.johnsnowlabs.nlp.annotators.param.ExternalResourceParam
 import com.johnsnowlabs.nlp.pretrained.ResourceDownloader
 import com.johnsnowlabs.nlp.serialization.StructFeature
-import com.johnsnowlabs.nlp.util.regex.{MatchStrategy, RuleFactory}
-import org.apache.spark.ml.param.{BooleanParam, Param, StringArrayParam}
+import com.johnsnowlabs.nlp.util.regex.{MatchStrategy, RegexRule, RuleFactory}
 import com.johnsnowlabs.nlp.{Annotation, AnnotatorModel, ParamsAndFeaturesReadable}
-import org.apache.spark.ml.util.{DefaultParamsReadable, Identifiable}
-
-import scala.collection.mutable.ArrayBuffer
+import org.apache.spark.ml.param.{BooleanParam, Param, StringArrayParam}
+import org.apache.spark.ml.util.Identifiable
+import org.apache.spark.sql.Row
+import org.apache.spark.sql.types.{ArrayType, StringType, StructField, StructType}
 
 /**
   * Tokenizes raw text into word pieces, tokens.
@@ -22,7 +19,45 @@ class TokenizerModel(override val uid: String) extends AnnotatorModel[TokenizerM
 
   import com.johnsnowlabs.nlp.AnnotatorType._
 
-  val rules: StructFeature[RuleFactory] = new StructFeature[RuleFactory](this, "rules")
+  val rules: StructFeature[RuleFactory] = new StructFeature[RuleFactory](this, "rules",
+    schema = StructType(Seq(
+      StructField("rules", ArrayType(StructType(Seq(
+        StructField("regex", StringType),
+        StructField("identifier", StringType)
+      )))),
+      StructField("symbolRules", ArrayType(StructType(Seq(
+        StructField("symbol", StringType),
+        StructField("regex", StringType),
+        StructField("identifier", StringType)
+      ))))
+    )),
+    encode = struct => {
+      Row(
+        struct.getRules.map(rule => (rule.regex.toString(), rule.identifier)),
+        struct.getSymbolRules.map(rule => (rule._1, rule._2.regex.toString(), rule._2.identifier))
+      )
+    },
+    decode = row => {
+      val struct = new RuleFactory(matchStrategy = MatchStrategy.MATCH_FIRST)
+      struct.setRules(
+        row.getAs[Seq[Row]]("rules").map { rulesRow =>
+          new RegexRule(
+             rx = rulesRow.getAs[String]("regex").r,
+             identifier = rulesRow.getAs[String]("identifier")
+          )
+        }
+      )
+      struct.setSymbolRules(
+        row.getAs[Seq[Row]]("symbolRules").map { symbolRulesRow =>
+          symbolRulesRow.getAs[String]("symbol") -> new RegexRule(
+            rx = symbolRulesRow.getAs[String]("regex").r,
+            identifier = symbolRulesRow.getAs[String]("identifier")
+          )
+        }
+      )
+      struct
+    }
+  )
   val exceptions: StringArrayParam = new StringArrayParam(this, "exceptions", "Words that won't be affected by tokenization rules")
   val caseSensitiveExceptions: BooleanParam = new BooleanParam(this, "caseSensitiveExceptions", "Whether to care for case sensitiveness in exceptions")
   val targetPattern: Param[String] = new Param(this, "targetPattern", "pattern to grab from text as token candidates. Defaults \\S+")
