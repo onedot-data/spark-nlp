@@ -1,6 +1,6 @@
 package com.johnsnowlabs.nlp.pretrained
 
-import com.johnsnowlabs.nlp.annotator.{NerCrfModel, PerceptronModel, WordEmbeddingsModel}
+import com.johnsnowlabs.nlp.annotator.{LemmatizerModel, NerCrfModel, PerceptronModel, WordEmbeddingsModel}
 import com.johnsnowlabs.nlp.pretrained.ResourceDownloader._
 import com.johnsnowlabs.nlp.pretrained.ResourceType.{MODEL, PIPELINE, ResourceType}
 import com.johnsnowlabs.nlp.pretrained.Scala212CompatSpec.ExportDefinition
@@ -41,6 +41,8 @@ class Scala212CompatSpec extends FunSpec with BeforeAndAfterAll with BeforeAndAf
 
   downloadConvertAndExport("NerCrf", nerCrfModel)
 
+  downloadConvertAndExport("Lemmatizer", lemmatizerModel)
+
   downloadConvertAndExport("PretrainedPipeline", pretrainedPipeline)
 
   private[this] def downloadConvertAndExport[A](modelName: String, exportDef: ExportDefinition[A]): Unit = {
@@ -48,25 +50,25 @@ class Scala212CompatSpec extends FunSpec with BeforeAndAfterAll with BeforeAndAf
       for ((lang, name) <- exportDef.models) yield {
         describe(s"${name}_$lang") {
           val fileName = s"${name}_$lang"
-//          it("Download & Save Standard + Compat") {
-//            val model = exportDef.download(name, Some(lang))
-//            exportDef.standardWriter(model).save(s"$standardDir/$fileName")
-//          }
-//          it("Load Standard & Save Compat") {
-//            val model = exportDef.standardReader.load(s"$standardDir/$fileName")
-//            exportDef.compatWriter(model).save(s"$compatDir/$fileName")
-//          }
+          it("Download & Save Standard + Compat") {
+            val model = exportDef.download(name, Some(lang))
+            exportDef.standardWriter(model).save(s"$standardDir/$fileName")
+          }
+          it("Load Standard & Save Compat") {
+            val model = exportDef.standardReader.load(s"$standardDir/$fileName")
+            exportDef.compatWriter(model).save(s"$compatDir/$fileName")
+          }
           it("Load Compat & Export zip") {
-            val model = exportDef.compatReader.load(s"$compatDir/$fileName")
-//            saveModel(
-//              name = name,
-//              language = Some(lang),
-//              libVersion = Some(libVersion),
-//              sparkVersion = Some(sparkVersion),
-//              modelWriter = exportDef.compatWriter(model),
-//              folder = exportDir.toString,
-//              category = Some(exportDef.resourceType)
-//            )
+            val model = exportDef.compatLoad(s"$compatDir/$fileName")
+            saveModel(
+              name = name,
+              language = Some(lang),
+              libVersion = Some(libVersion),
+              sparkVersion = Some(sparkVersion),
+              modelWriter = exportDef.compatWriter(model),
+              folder = exportDir.toString,
+              category = Some(exportDef.resourceType)
+            )
           }
         }
       }
@@ -79,9 +81,9 @@ object Scala212CompatSpec {
                                  download: (String, Option[String]) => A,
                                  standardReader: MLReader[A],
                                  standardWriter: A => MLWriter,
-                                 compatReader: MLReader[A],
+                                 compatLoad: String => A,
                                  compatWriter: A => MLWriter,
-                                 models: Map[String, String])
+                                 models: Seq[(String, String)])
 
   object exports {
     val perceptronModel: ExportDefinition[PerceptronModel] = {
@@ -90,9 +92,9 @@ object Scala212CompatSpec {
         downloadModel[PerceptronModel](PerceptronModel, _, _, publicLoc),
         PerceptronModel.read,
         _.write,
-        PerceptronModel.compatRead,
+        PerceptronModel.compatRead.load,
         _.compatWrite,
-        Map(
+        Seq(
           "en" -> "pos_anc",
           "de" -> "pos_ud_hdt",
           "fr" -> "pos_ud_gsd",
@@ -106,9 +108,9 @@ object Scala212CompatSpec {
         downloadModel[WordEmbeddingsModel](WordEmbeddingsModel, _, _, publicLoc),
         WordEmbeddingsModel.read,
         _.write,
-        WordEmbeddingsModel.compatRead,
+        WordEmbeddingsModel.compatRead.load(_),
         _.compatWrite,
-        Map("en" -> "glove_100d")
+        Seq("en" -> "glove_100d")
       )
     }
     val nerCrfModel: ExportDefinition[NerCrfModel] = {
@@ -117,9 +119,23 @@ object Scala212CompatSpec {
         downloadModel[NerCrfModel](NerCrfModel, _, _, publicLoc),
         NerCrfModel.read,
         _.write,
-        NerCrfModel.compatRead,
+        NerCrfModel.compatRead.load(_),
         _.compatWrite,
-        Map("en" -> "ner_crf")
+        Seq("en" -> "ner_crf")
+      )
+    }
+    val lemmatizerModel: ExportDefinition[LemmatizerModel] = {
+      ExportDefinition[LemmatizerModel](
+        MODEL,
+        downloadModel[LemmatizerModel](LemmatizerModel, _, _, publicLoc),
+        LemmatizerModel.read,
+        _.write,
+        LemmatizerModel.compatRead.load(_),
+        _.compatWrite,
+        Seq(
+          "en" -> "lemma_antbnc",
+          "de" -> "lemma"
+        )
       )
     }
     val pretrainedPipeline: ExportDefinition[PipelineModel] = {
@@ -130,7 +146,7 @@ object Scala212CompatSpec {
         _.write,
         (path: String) => PipelineModelCompat.toPipelineModel(PipelineModelCompat.load(path)),
         PipelineModelCompat.fromPipelineModel(_).compatWrite,
-        Map("en" -> "explain_document_ml")
+        Seq("en" -> "explain_document_ml")
       )
     }
   }
