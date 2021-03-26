@@ -21,8 +21,8 @@ import scala.collection.JavaConverters._
 class S3ResourceDownloader(bucket: => String,
                            s3Path: => String,
                            cacheFolder: => String,
-                           credentials: => Option[AWSCredentials] = None,
-                           region: String = "us-east-1"
+                           region: String,
+                           credentials: => Option[AWSCredentials] = None
                           )
   extends ResourceDownloader with AutoCloseable {
 

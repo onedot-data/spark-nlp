@@ -26,6 +26,9 @@ object ConfigHelper {
   // Configures s3 path where pretrained models are stored
   val pretrainedS3PathKey = "sparknlp.settings.pretrained.s3_path"
 
+  // Configures s3 region where pretrained models are stored
+  val pretrainedS3Region = "sparknlp.settings.pretrained.s3_region"
+
   // Configures cache folder where to cache pretrained models
   val pretrainedCacheFolder = "sparknlp.settings.pretrained.cache_folder"
 

@@ -62,6 +62,8 @@ object ResourceDownloader {
 
   def s3Path = ConfigHelper.getConfigValueOrElse(ConfigHelper.pretrainedS3PathKey, "")
 
+  def s3Region = ConfigHelper.getConfigValueOrElse(ConfigHelper.pretrainedS3Region, "us-east-1")
+
   def cacheFolder = ConfigHelper.getConfigValueOrElse(ConfigHelper.pretrainedCacheFolder, fs.getHomeDirectory + "/cache_pretrained")
 
   def credentials: Option[AWSCredentials] = if (ConfigHelper.hasPath(ConfigHelper.awsCredentials)) {
@@ -110,15 +112,15 @@ object ResourceDownloader {
     Version.parse(Build.version)
   }
 
-  var defaultDownloader: ResourceDownloader = new S3ResourceDownloader(s3Bucket, s3Path, cacheFolder, credentials)
-  var publicDownloader: ResourceDownloader = new S3ResourceDownloader(s3Bucket, s3Path, cacheFolder, Some(new AnonymousAWSCredentials()))
+  var defaultDownloader: ResourceDownloader = new S3ResourceDownloader(s3Bucket, s3Path, cacheFolder, s3Region, credentials)
+  var publicDownloader: ResourceDownloader = new S3ResourceDownloader(s3Bucket, s3Path, cacheFolder, s3Region, Some(new AnonymousAWSCredentials()))
 
   /**
     * Reset the cache and recreate ResourceDownloader S3 credentials
     */
   def resetResourceDownloader(): Unit = {
     cache.empty
-    this.defaultDownloader = new S3ResourceDownloader(s3Bucket, s3Path, cacheFolder, credentials)
+    this.defaultDownloader = new S3ResourceDownloader(s3Bucket, s3Path, cacheFolder, s3Region, credentials)
   }
 
   /**
